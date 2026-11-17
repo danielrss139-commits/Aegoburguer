@@ -267,3 +267,34 @@ html.intro .hero-flut img, html.intro .hero-t .ln-i, html.intro .hero .entra { a
 @media (prefers-reduced-motion: reduce) { .ag-lista li { color: var(--tx); } }
 .js .ag-lista li.revela { transition: opacity .7s var(--ease), transform .7s var(--ease), color .35s, padding-left .35s var(--ease); }
 .hero::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 180px; z-index: -1; pointer-events: none; background: linear-gradient(180deg, rgba(23, 18, 15, 0), rgba(23, 18, 15, .7) 55%, var(--bg)); }
+
+/* ===== v12 · hero: burger de fundo com sombra e o nome quase em cima dele (sem zoom exagerado) ===== */
+.hero-t { text-shadow: 0 2px 22px rgba(10, 7, 5, .55); }
+@media (max-width: 899px) {
+  .hero { min-height: 0; display: block; }
+  .hero-fundo { inset: 0 0 auto 0; height: calc(56px + env(safe-area-inset-top, 0px) + 86vw); }
+  .hero-flut { inset: auto; top: calc(52px + env(safe-area-inset-top, 0px)); left: -10vw; width: 120vw; height: auto; aspect-ratio: 1100 / 768; animation-name: antigravS; }
+  .hero-flut img { object-fit: cover; object-position: 50% 50%;
+    -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 7%, #000 56%, transparent 94%); mask-image: linear-gradient(180deg, transparent 0, #000 7%, #000 56%, transparent 94%); }
+  .hero-veu { background:
+    linear-gradient(180deg, rgba(15, 11, 9, .35) 0, rgba(15, 11, 9, 0) 90px, rgba(15, 11, 9, 0) calc(52px + 40vw), rgba(23, 18, 15, .55) calc(52px + 58vw), rgba(23, 18, 15, .9) calc(52px + 74vw), var(--bg) calc(52px + 86vw)); }
+  .hero-c { padding-top: calc(52px + env(safe-area-inset-top, 0px) + 57vw); padding-bottom: 30px; }
+  .hero-local { margin-top: 24px; }
+  .hero::after { height: 60px; }
+  #camadas { padding-top: 44px; }
+}
+@media (min-width: 900px) {
+  .hero { min-height: 100vh; min-height: 100svh; display: flex; align-items: center; }
+  .hero-fundo { inset: 0; height: auto; }
+  .hero-flut { --hw: min(76vw, calc((100svh - 60px) * 1.79)); inset: auto; left: auto; right: 6vw; top: calc(50% + 34px - var(--hw) * .2791); width: var(--hw); height: auto; aspect-ratio: 1600 / 893; animation-name: antigravS; }
+  .hero-flut img { object-fit: cover; object-position: 50% 50%;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 30%, #000 86%, transparent 100%), linear-gradient(180deg, transparent 0, #000 9%, #000 80%, transparent 100%);
+    -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(90deg, transparent 0, #000 30%, #000 86%, transparent 100%), linear-gradient(180deg, transparent 0, #000 9%, #000 80%, transparent 100%);
+    mask-composite: intersect; }
+  .hero-veu { background:
+    radial-gradient(38% 48% at 70% 56%, rgba(15, 11, 9, 0), rgba(15, 11, 9, 0) 60%, rgba(15, 11, 9, .35) 100%),
+    linear-gradient(90deg, rgba(15, 11, 9, .94) 0%, rgba(15, 11, 9, .78) 24%, rgba(15, 11, 9, .32) 42%, rgba(15, 11, 9, 0) 56%),
+    linear-gradient(180deg, rgba(15, 11, 9, .45) 0%, rgba(15, 11, 9, 0) 16%, rgba(15, 11, 9, 0) 76%, var(--bg) 100%); }
+  .hero-c { padding-top: 110px; padding-bottom: 8vh; }
+}
