@@ -88,12 +88,13 @@
       });
     });
     DB.ouvirCardapio(function () { DB.cardapio().then(function (c) { cardapio = c; if (abaAtual === 'cardapio') pintarCardapio(); }); });
-    DB.ouvirLoja(function () { DB.loja().then(function (l) { loja = l; pintarLoja(); U.aplicarCor(l.cor); }); });
+    DB.ouvirLoja(function () { DB.loja().then(function (l) { loja = l; pintarLoja(); linksSite(); U.aplicarCor(l.cor); }); });
     setInterval(function () { if (abaAtual === 'pedidos') atualizarTempos(); pintarLoja(); }, 30000);
   }
 
   /* ---------- topo / loja ---------- */
   function pintarLoja() {
+    linksSite();
     var st = DB.statusLoja(loja), p = $('#pillLoja');
     p.classList.toggle('aberta', st.aberta);
     p.querySelector('span').textContent = st.aberta ? 'Aberta' : 'Fechada';
@@ -475,6 +476,14 @@
   }
   $('#segPeriodo').addEventListener('click', function (e) { var b = e.target.closest('[data-p]'); if (!b) return; periodo = b.getAttribute('data-p'); $$('#segPeriodo button').forEach(function (x) { x.classList.toggle('ativo', x === b); }); pintarFinanceiro(); });
 
+  /* ---------- link "Ver site": sempre o site da loja ---------- */
+  function urlSite() { return (loja && loja.siteUrl) || new URL('index.html', location.href).href; }
+  function linksSite() { $$('.js-site').forEach(function (a) { a.href = urlSite(); }); }
+  d.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('.js-site'); if (!a) return;
+    e.preventDefault(); var u = urlSite(); if (!loja || !loja.siteUrl) u += (u.indexOf('?') < 0 ? '?' : '&') + 'v=' + Date.now();
+    var jan = w.open(u, '_blank'); if (jan) { try { jan.opener = null; } catch (er) {} } else location.href = u;
+  });
   /* ---------- administração ---------- */
   var secAdm = 'loja';
   var DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
@@ -498,7 +507,7 @@
   $('#admMenu').addEventListener('click', function (e) { var b = e.target.closest('[data-sec]'); if (b) secaoAdm(b.getAttribute('data-sec')); });
   function pintarStatusAdm() { var st = DB.statusLoja(loja); $('#admStatus').innerHTML = '<i class="' + (st.aberta ? 'on' : '') + '"></i><b>' + esc(st.texto) + '</b><small>' + (loja.modo === 'auto' ? 'automático' : 'definido manualmente') + '</small>'; }
   function pintarAjustes() {
-    preencher($('#fLoja'), ['nome', 'slogan', 'bairro', 'cidade', 'endereco', 'telefone', 'whatsapp', 'instagram', 'faixaPreco']);
+    preencher($('#fLoja'), ['nome', 'slogan', 'bairro', 'cidade', 'endereco', 'telefone', 'whatsapp', 'instagram', 'faixaPreco', 'siteUrl']);
     preencher($('#fHorario'), ['abre', 'fecha', 'modo']);
     var folgas = loja.folgas || [];
     $('#dias').innerHTML = DIAS.map(function (d, k) { return '<label><input type="checkbox" value="' + k + '"' + (folgas.indexOf(k) >= 0 ? ' checked' : '') + '><span>' + d + '</span></label>'; }).join('');
@@ -521,11 +530,13 @@
   // loja
   $('#fLoja').addEventListener('submit', function (e) {
     e.preventDefault(); var f = e.target, o = {};
-    ['nome', 'slogan', 'bairro', 'cidade', 'endereco', 'telefone', 'whatsapp', 'instagram', 'faixaPreco'].forEach(function (k) { o[k] = f[k].value.trim(); });
+    ['nome', 'slogan', 'bairro', 'cidade', 'endereco', 'telefone', 'whatsapp', 'instagram', 'faixaPreco', 'siteUrl'].forEach(function (k) { o[k] = f[k].value.trim(); });
     if (!o.nome) { toast('Informe o nome da loja'); f.nome.focus(); return; }
     o.whatsapp = digitos(o.whatsapp); if (o.whatsapp && o.whatsapp.length <= 11) o.whatsapp = '55' + o.whatsapp;
     o.instagram = o.instagram.replace(/^@/, '');
-    DB.salvarLoja(o).then(function (l) { loja = l; f.whatsapp.value = l.whatsapp; f.instagram.value = l.instagram; salvo(f); });
+    if (o.siteUrl && !/^https?:\/\//i.test(o.siteUrl)) o.siteUrl = 'https://' + o.siteUrl;
+    if (o.siteUrl) { try { new URL(o.siteUrl); } catch (er) { toast('Endereço do site inválido'); f.siteUrl.focus(); return; } }
+    DB.salvarLoja(o).then(function (l) { loja = l; f.whatsapp.value = l.whatsapp; f.instagram.value = l.instagram; f.siteUrl.value = l.siteUrl || ''; linksSite(); salvo(f); });
   });
   // horários
   $('#fHorario').addEventListener('submit', function (e) {
