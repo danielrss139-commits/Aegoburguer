@@ -27,7 +27,7 @@
    ===================================================================== */
 (function (w) {
   'use strict';
-  var VERSAO = 3;
+  var VERSAO = 4;
   var K = { versao: 'ab_versao', loja: 'ab_loja', cardapio: 'ab_cardapio', pedidos: 'ab_pedidos', seq: 'ab_seq', sessao: 'ab_sessao' };
   var LS = w.localStorage;
 
@@ -40,12 +40,12 @@
   var LOJA = {
     nome: 'AEGO Burguer',
     slogan: 'Sabor que vicia',
-    bairro: 'Vila Mariana',
-    cidade: 'São Paulo - SP',
-    endereco: 'R. Domingos de Morais, 1200 — Vila Mariana, São Paulo/SP, 04010-100',
-    telefone: '(11) 94000-1234',
-    whatsapp: '5511940001234',
-    mapa: 'https://maps.google.com/?q=R.+Domingos+de+Morais,+1200+Vila+Mariana+Sao+Paulo',
+    bairro: 'Centro',
+    cidade: 'Sua Cidade - UF',
+    endereco: 'Rua Exemplo, 123 — Centro, Sua Cidade/UF',
+    telefone: '(71) 98390-1535',
+    whatsapp: '5571983901535',
+    mapa: 'https://www.google.com/maps/search/?api=1&query=hamburgueria',
     instagram: 'aegoburguer',
     abre: '11:00',
     fecha: '01:00',
@@ -54,13 +54,13 @@
     tempoRetirada: '20–30 min',
     pedidoMinimo: 20,
     bairros: [
-      { nome: 'Vila Mariana', taxa: 5, tempo: '30–40 min' },
-      { nome: 'Aclimação', taxa: 6, tempo: '35–45 min' },
-      { nome: 'Paraíso', taxa: 6, tempo: '35–45 min' },
-      { nome: 'Saúde', taxa: 7, tempo: '40–50 min' },
-      { nome: 'Ipiranga', taxa: 9, tempo: '45–55 min' },
-      { nome: 'Moema', taxa: 9, tempo: '45–55 min' },
-      { nome: 'Liberdade', taxa: 8, tempo: '40–50 min' }
+      { nome: 'Centro', taxa: 5, tempo: '30–40 min' },
+      { nome: 'Jardim Europa', taxa: 6, tempo: '35–45 min' },
+      { nome: 'Vila Nova', taxa: 6, tempo: '35–45 min' },
+      { nome: 'Bela Vista', taxa: 7, tempo: '40–50 min' },
+      { nome: 'Boa Vista', taxa: 8, tempo: '40–50 min' },
+      { nome: 'Santa Cruz', taxa: 9, tempo: '45–55 min' },
+      { nome: 'São José', taxa: 9, tempo: '45–55 min' }
     ],
     // adicionais oferecidos nos itens com "extras: 'burger'"
     extras: [
@@ -151,7 +151,7 @@
       var formas = ['pix', 'pix', 'cartao', 'cartao', 'dinheiro'], f = formas[Math.floor(r() * formas.length)];
       var total = +(sub + taxa).toFixed(2);
       seq++;
-      var p = { id: String(seq), numero: seq, criadoEm: t, cliente: { nome: NOMES[Math.floor(r() * NOMES.length)], telefone: '(11) 9' + (8000 + Math.floor(r() * 1999)) + '-' + (1000 + Math.floor(r() * 8999)) },
+      var p = { id: String(seq), numero: seq, criadoEm: t, cliente: { nome: NOMES[Math.floor(r() * NOMES.length)], telefone: '(71) 9' + (8000 + Math.floor(r() * 1999)) + '-' + (1000 + Math.floor(r() * 8999)) },
         tipo: entrega ? 'entrega' : 'retirada', endereco: entrega ? { rua: 'Rua Exemplo', numero: String(10 + Math.floor(r() * 900)), complemento: '', bairro: b.nome } : null,
         itens: itens, subtotal: sub, taxa: taxa, total: total,
         pagamento: { forma: f, trocoPara: f === 'dinheiro' ? Math.ceil(total / 50) * 50 : 0 }, obs: '', status: status,

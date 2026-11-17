@@ -137,7 +137,7 @@ html.intro .hero-flut img, html.intro .hero-t .ln-i, html.intro .hero .entra { a
 /* local */
 .sec-local { background: var(--bg3); }
 .sub-amb { margin: 12px 0 0; color: var(--amb); font-weight: 700; letter-spacing: .08em; font-size: 15px; }
-.local-grid { display: grid; gap: 40px; margin-top: 40px; }
+.local-grid { display: grid; gap: 24px; margin-top: 40px; }
 @media (min-width: 960px) { .local-grid { grid-template-columns: 1.1fr 1fr; gap: 64px; align-items: start; } }
 .linhas { margin: 0; }
 .linhas > div { display: grid; grid-template-columns: 128px 1fr; gap: 16px; padding: 20px 0; border-top: 1px solid var(--linha); }
@@ -182,3 +182,43 @@ html.intro .hero-flut img, html.intro .hero-t .ln-i, html.intro .hero .entra { a
 @media (max-width: 380px) { .topo-marca .wm { font-size: 25px; } .btn-topo { padding: 0 16px; font-size: 14px; } .linhas > div { grid-template-columns: 1fr; gap: 4px; } }
 
 @media (prefers-reduced-motion: reduce) { .js .revela { opacity: 1; transform: none; } .entra, .hero-t .ln-i, .hero-flut, .hero-flut img { animation: none; } }
+
+/* ============ v4 (17/11): hero com o burger inteiro, sem vão; cards sem zoom; contato e WhatsApp ============ */
+.card-foto { aspect-ratio: 1 / 1; }
+.card-foto img { object-position: 50% 50%; }
+
+@media (max-width: 899px) {
+  .hero { min-height: 0; display: block; }
+  .hero-fundo { inset: 0 0 auto 0; height: calc(64px + env(safe-area-inset-top, 0px) + 96vw); }
+  .hero-flut { top: calc(60px + env(safe-area-inset-top, 0px)); left: 5%; width: 90%; aspect-ratio: 816 / 768; }
+  .hero-flut::after { display: none; }
+  .hero-flut img { object-fit: contain; -webkit-mask-image: radial-gradient(ellipse 62% 60% at 50% 46%, #000 64%, transparent 100%); mask-image: radial-gradient(ellipse 62% 60% at 50% 46%, #000 64%, transparent 100%); }
+  .hero-veu { background: linear-gradient(180deg, rgba(15, 11, 9, .35) 0, rgba(15, 11, 9, 0) calc(64px + 18vw), rgba(15, 11, 9, .2) calc(64px + 52vw), rgba(23, 18, 15, .82) calc(64px + 78vw), var(--bg) calc(64px + 92vw)); }
+  .hero-c { padding-top: calc(64px + env(safe-area-inset-top, 0px) + 68vw); padding-bottom: 56px; }
+  .hero-local { margin-top: 26px; }
+}
+
+/* contato */
+.info { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.info li { display: flex; align-items: flex-start; gap: 14px; padding: 16px; background: var(--bg2); border: 1px solid var(--linha); border-radius: 12px; }
+.info-ic { flex: 0 0 auto; width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: rgba(224, 164, 58, .12); color: var(--amb); }
+.info-ic svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.info small { display: block; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; color: var(--amb); margin: 2px 0 4px; }
+.info b { display: block; font-weight: 500; color: rgba(244, 237, 226, .92); line-height: 1.45; overflow-wrap: anywhere; }
+.info a { color: inherit; text-decoration: none; }
+.acoes-local { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.acoes-local .btn { border-radius: 10px; padding: 0 16px; }
+.acoes-local .btn-zap { grid-column: 1 / -1; }
+.btn-zap { background: #25d366; color: #0b2614; border-color: #25d366; font-weight: 700; letter-spacing: .02em; }
+.btn-zap:hover { background: #2fe072; border-color: #2fe072; }
+.btn .zap-ic, .zap-ic { width: 22px; height: 22px; fill: currentColor; stroke: none; }
+.btn:hover .zap-ic { transform: none; }
+.mapa { border-radius: 12px; }
+.mapa-t { border-radius: 8px; }
+
+/* WhatsApp flutuante */
+.zap-fab { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 60; width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; background: #25d366; color: #fff; box-shadow: 0 8px 22px rgba(0, 0, 0, .35); opacity: 0; transform: translateY(18px) scale(.85); pointer-events: none; transition: opacity .3s var(--ease), transform .35s var(--ease); }
+.zap-fab .zap-ic { width: 30px; height: 30px; }
+.zap-fab.on { opacity: 1; transform: none; pointer-events: auto; }
+.zap-fab:active { transform: scale(.94); }
+@media (prefers-reduced-motion: reduce) { .zap-fab { transition: none; } }

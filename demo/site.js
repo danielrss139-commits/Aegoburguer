@@ -88,7 +88,8 @@
     var min = Math.min.apply(null, l.bairros.map(function (b) { return b.taxa; }));
     d.getElementById('entrega').textContent = l.bairros.slice(0, 4).map(function (b) { return b.nome; }).join(', ') + ' e região · taxa a partir de ' + U.brl(min);
     d.getElementById('comoChegar').href = l.mapa; d.getElementById('mapa').href = l.mapa;
-    d.getElementById('zap').href = 'https://wa.me/' + l.whatsapp + '?text=' + encodeURIComponent('Olá, AEGO Burguer! Vim pelo site.');
+    var zap = 'https://wa.me/' + l.whatsapp + '?text=' + encodeURIComponent('Olá, AEGO Burguer! Vim pelo site.');
+    d.getElementById('zap').href = zap; d.getElementById('zapFab').href = zap;
     d.getElementById('notaMedia').textContent = String(l.notaMedia).replace('.', ',');
     d.getElementById('notaTotal').textContent = '+' + l.totalAvaliacoes.toLocaleString('pt-BR') + ' avaliações';
     d.getElementById('avals').innerHTML = (l.avaliacoes || []).map(function (a) {
@@ -109,6 +110,12 @@
     }).join('');
     observar(d.getElementById('cards'));
   }
+
+  (function () { // botão flutuante do WhatsApp aparece depois da entrada
+    var fab = d.getElementById('zapFab'), hero = d.getElementById('inicio');
+    if (!fab || !hero || !('IntersectionObserver' in window)) { if (fab) fab.classList.add('on'); return; }
+    new IntersectionObserver(function (es) { fab.classList.toggle('on', !es[0].isIntersecting); }, { threshold: 0.15 }).observe(hero);
+  })();
 
   DB.loja().then(aplicarLoja);
   DB.cardapio().then(aplicarCardapio);

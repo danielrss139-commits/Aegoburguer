@@ -272,7 +272,7 @@
     var h = cab('Finalizar pedido', 'sacola') + '<form class="folha-corpo" id="ck" novalidate><div class="ck">' +
       '<h3>Seus dados</h3>' +
       '<label class="campo" data-c="nome"><span>Nome</span><input name="nome" autocomplete="name" value="' + esc(cliente.nome) + '" placeholder="Como podemos te chamar?"></label>' +
-      '<label class="campo" data-c="telefone"><span>Telefone (WhatsApp)</span><input name="telefone" inputmode="tel" autocomplete="tel" value="' + esc(cliente.telefone) + '" placeholder="(11) 90000-0000"></label>' +
+      '<label class="campo" data-c="telefone"><span>Telefone (WhatsApp)</span><input name="telefone" inputmode="tel" autocomplete="tel" value="' + esc(cliente.telefone) + '" placeholder="(71) 90000-0000"></label>' +
       '<h3>Como quer receber?</h3><div class="seg">' +
       '<label><input type="radio" name="tipo" value="entrega"' + (tipo === 'entrega' ? ' checked' : '') + '><span>' + IC.moto + 'Entrega<small id="ckTempoE"></small></span></label>' +
       '<label><input type="radio" name="tipo" value="retirada"' + (tipo === 'retirada' ? ' checked' : '') + '><span>' + IC.loja + 'Retirada<small>' + esc(loja.tempoRetirada) + ' · grátis</small></span></label></div>' +
