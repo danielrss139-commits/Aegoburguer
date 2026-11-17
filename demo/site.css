@@ -298,3 +298,27 @@ html.intro .hero-flut img, html.intro .hero-t .ln-i, html.intro .hero .entra { a
     linear-gradient(180deg, rgba(15, 11, 9, .45) 0%, rgba(15, 11, 9, 0) 16%, rgba(15, 11, 9, 0) 76%, var(--bg) 100%); }
   .hero-c { padding-top: 110px; padding-bottom: 8vh; }
 }
+
+/* ===== v13 · hero minimalista: burger em tela cheia no fundo (zoom no pão com o carimbo), véu escuro e texto por cima ===== */
+.hero { min-height: 100vh; min-height: 100svh; display: flex; align-items: center; }
+.hero-fundo { inset: 0; height: auto; }
+.hero-flut { inset: -3%; top: -3%; left: -3%; width: auto; height: auto; aspect-ratio: auto; animation-name: antigravS; }
+.hero-flut::after { display: none; }
+.hero-flut img { width: 100%; height: 100%; object-fit: cover; object-position: 77% 30%; -webkit-mask-image: none; mask-image: none; filter: saturate(.92) brightness(.82); }
+.hero-veu { background:
+  radial-gradient(120% 70% at 60% 35%, rgba(15, 11, 9, .15), rgba(15, 11, 9, .55) 70%),
+  linear-gradient(180deg, rgba(15, 11, 9, .55) 0, rgba(15, 11, 9, .25) 18%, rgba(15, 11, 9, .45) 55%, rgba(23, 18, 15, .92) 82%, var(--bg) 100%); }
+.hero-c { padding-top: calc(110px + env(safe-area-inset-top, 0px)); padding-bottom: 14vh; }
+.hero-sub { margin: 22px 0 0; font-size: clamp(17px, 4.6vw, 21px); color: rgba(244, 237, 226, .86); letter-spacing: .01em; }
+.hero-acoes { margin-top: 30px; }
+.hero-local { margin-top: 30px; }
+.hero::after { height: 120px; }
+#camadas { padding-top: 56px; }
+@media (min-width: 900px) {
+  .hero-flut img { object-position: 78% 40%; filter: saturate(.95) brightness(.88); }
+  .hero-veu { background:
+    linear-gradient(90deg, rgba(15, 11, 9, .92) 0%, rgba(15, 11, 9, .7) 30%, rgba(15, 11, 9, .25) 55%, rgba(15, 11, 9, .1) 100%),
+    linear-gradient(180deg, rgba(15, 11, 9, .45) 0%, rgba(15, 11, 9, 0) 18%, rgba(15, 11, 9, 0) 72%, var(--bg) 100%); }
+  .hero-c { padding-top: 120px; padding-bottom: 8vh; }
+  .hero-sub { font-size: 20px; }
+}
