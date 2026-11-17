@@ -9,7 +9,7 @@
   var loja = null, cardapio = { categorias: [], itens: [] }, pedidos = [], conhecidos = null, abaAtual = 'pedidos', periodo = 'hoje', catFiltro = '';
   var somOn = LS.getItem('ab_som') !== '0';
   var FOTOS = ['aego', 'salad', 'crispy', 'smash', 'triplo', 'duplo', 'melt', 'frango', 'combo1', 'combo2', 'batata', 'batatacb', 'onion', 'nuggets', 'refri', 'guarana', 'limonada', 'shake', 'brownie', 'petit'];
-  var TITULOS = { pedidos: 'Pedidos', concluidos: 'Concluídos', cardapio: 'Cardápio', financeiro: 'Financeiro', ajustes: 'Ajustes' };
+  var TITULOS = { pedidos: 'Pedidos', concluidos: 'Concluídos', cardapio: 'Cardápio', financeiro: 'Financeiro', ajustes: 'Administração' };
 
   /* ---------- utilidades ---------- */
   var tT;
@@ -81,11 +81,14 @@
         if (abaAtual === 'concluidos') pintarConcluidos();
         if (fichaAberta && acharPedido(fichaAberta)) abrirPedido(fichaAberta, true);
         if (abaAtual === 'financeiro') pintarFinanceiro();
-        novos.filter(function (p) { return p.status === 'novo'; }).forEach(avisarNovo);
+        novos.filter(function (p) { return p.status === 'novo'; }).forEach(function (p) {
+          avisarNovo(p);
+          if (LS.getItem('ab_auto') === '1') DB.mudarStatus(p.id, 'preparo').then(function (np) { trocarPedido(np); repintar(); toast('#' + np.numero + ' aceito automaticamente'); });
+        });
       });
     });
     DB.ouvirCardapio(function () { DB.cardapio().then(function (c) { cardapio = c; if (abaAtual === 'cardapio') pintarCardapio(); }); });
-    DB.ouvirLoja(function () { DB.loja().then(function (l) { loja = l; pintarLoja(); }); });
+    DB.ouvirLoja(function () { DB.loja().then(function (l) { loja = l; pintarLoja(); U.aplicarCor(l.cor); }); });
     setInterval(function () { if (abaAtual === 'pedidos') atualizarTempos(); pintarLoja(); }, 30000);
   }
 
@@ -105,6 +108,7 @@
   /* ---------- abas ---------- */
   function aba(a) {
     abaAtual = a;
+    if (a !== 'ajustes' && loja) U.aplicarCor(loja.cor);
     Object.keys(TITULOS).forEach(function (k) { $('#aba-' + k).hidden = k !== a; });
     $$('#lado button').forEach(function (b) { b.classList.toggle('ativo', b.getAttribute('data-aba') === a); });
     $('#tituloAba').textContent = TITULOS[a];
@@ -162,7 +166,7 @@
   var ICO_PRINT = '<svg class="ico" viewBox="0 0 24 24"><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><path d="M7 14h10v7H7z"/></svg>';
 
   function cartaoPedido(p, chegou) {
-    var min = (Date.now() - p.criadoEm) / 60000, atraso = (p.status === 'novo' && min > 5) || min > 40;
+    var min = (Date.now() - p.criadoEm) / 60000, atraso = (p.status === 'novo' && min > (loja.alertaNovo || 5)) || min > (loja.tempoAlvo || 40);
     var h = '<article class="ped' + (chegou ? ' chegou' : '') + '" data-abrir="' + p.id + '" tabindex="0" role="button" aria-label="Abrir pedido ' + p.numero + '">' +
       '<div class="ped-cab"><span class="ped-num">#' + p.numero + '</span><span class="etq ' + p.tipo + '">' + (p.tipo === 'entrega' ? 'Entrega' : 'Retirada') + '</span>' +
       '<span class="ped-tempo' + (atraso ? ' atraso' : '') + '" data-t="' + p.criadoEm + '">' + U.tempoDesde(p.criadoEm) + '</span></div>' +
@@ -471,32 +475,133 @@
   }
   $('#segPeriodo').addEventListener('click', function (e) { var b = e.target.closest('[data-p]'); if (!b) return; periodo = b.getAttribute('data-p'); $$('#segPeriodo button').forEach(function (x) { x.classList.toggle('ativo', x === b); }); pintarFinanceiro(); });
 
-  /* ---------- ajustes ---------- */
-  function preencher(f, campos) { campos.forEach(function (k) { f[k].value = loja[k] == null ? '' : loja[k]; }); }
-  function salvo(f) { var s = $('.salvo', f); s.classList.add('on'); setTimeout(function () { s.classList.remove('on'); }, 1800); }
+  /* ---------- administração ---------- */
+  var secAdm = 'loja';
+  var DIAS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+  var CORES = [['#e0a43a', 'Âmbar (padrão)'], ['#e5533d', 'Vermelho'], ['#f2782c', 'Laranja'], ['#d4b13a', 'Dourado'], ['#3fb56b', 'Verde'], ['#2fa6a0', 'Turquesa'], ['#3b82e0', 'Azul'], ['#8b63e0', 'Roxo'], ['#e0568f', 'Rosa'], ['#f2efe9', 'Off-white']];
+  var COR_PADRAO = '#e0a43a';
+  function preencher(f, campos) { campos.forEach(function (k) { if (f[k]) f[k].value = loja[k] == null ? '' : loja[k]; }); }
+  function salvo(el) { var s = $('.salvo', el) || el; s.classList.add('on'); setTimeout(function () { s.classList.remove('on'); }, 1800); toast('Alterações salvas'); }
   function linhasBairros(lista) {
     $('#listaBairros').innerHTML = lista.map(function (b, k) {
-      return '<div class="bairro-ed"><input value="' + esc(b.nome) + '" data-b="nome" aria-label="Bairro"><input value="' + b.taxa + '" data-b="taxa" type="number" step="0.5" min="0" aria-label="Taxa"><input value="' + esc(b.tempo) + '" data-b="tempo" aria-label="Tempo"><button type="button" data-rmb="' + k + '" aria-label="Remover">×</button></div>';
+      return '<div class="bairro-ed"><input value="' + esc(b.nome) + '" data-b="nome" aria-label="Bairro" placeholder="Nome do bairro"><input value="' + b.taxa + '" data-b="taxa" type="number" step="1" min="0" aria-label="Taxa"><input value="' + esc(b.tempo) + '" data-b="tempo" aria-label="Tempo"><button type="button" data-rmb="' + k + '" aria-label="Remover bairro">×</button></div>';
     }).join('');
   }
   function lerBairros() { return $$('#listaBairros .bairro-ed').map(function (r) { return { nome: $('[data-b=nome]', r).value.trim(), taxa: +(parseFloat($('[data-b=taxa]', r).value) || 0), tempo: $('[data-b=tempo]', r).value.trim() }; }); }
-  function pintarAjustes() {
-    preencher($('#fLoja'), ['nome', 'slogan', 'bairro', 'cidade', 'endereco', 'telefone', 'whatsapp']);
-    preencher($('#fHorario'), ['abre', 'fecha', 'modo', 'pedidoMinimo', 'tempoRetirada']);
-    linhasBairros(loja.bairros);
-    $('#chTema').checked = d.documentElement.getAttribute('data-tema') !== 'claro';
-    pintarSom();
+  function secaoAdm(s) {
+    secAdm = s;
+    if (s !== 'aparencia' && loja) { U.aplicarCor(loja.cor); if ($('#cores').innerHTML) pintarCores(loja.cor || COR_PADRAO); }
+    $$('#admMenu button').forEach(function (b) { b.classList.toggle('ativo', b.getAttribute('data-sec') === s); });
+    $$('.adm-sec').forEach(function (x) { x.hidden = x.getAttribute('data-sec') !== s; });
+    var b = $('#admMenu .ativo'); if (b && b.scrollIntoView && w.innerWidth < 900) b.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
   }
-  $('#fLoja').addEventListener('submit', function (e) { e.preventDefault(); var f = e.target, o = {}; ['nome', 'slogan', 'bairro', 'cidade', 'endereco', 'telefone', 'whatsapp'].forEach(function (k) { o[k] = f[k].value.trim(); }); o.whatsapp = o.whatsapp.replace(/\D/g, ''); DB.salvarLoja(o).then(function (l) { loja = l; salvo(f); }); });
-  $('#fHorario').addEventListener('submit', function (e) { e.preventDefault(); var f = e.target; DB.salvarLoja({ abre: f.abre.value, fecha: f.fecha.value, modo: f.modo.value, pedidoMinimo: +f.pedidoMinimo.value || 0, tempoRetirada: f.tempoRetirada.value.trim() }).then(function (l) { loja = l; pintarLoja(); salvo(f); }); });
-  $('#fBairros').addEventListener('submit', function (e) { e.preventDefault(); DB.salvarLoja({ bairros: lerBairros().filter(function (b) { return b.nome; }) }).then(function (l) { loja = l; linhasBairros(l.bairros); salvo(e.target); }); });
+  $('#admMenu').addEventListener('click', function (e) { var b = e.target.closest('[data-sec]'); if (b) secaoAdm(b.getAttribute('data-sec')); });
+  function pintarStatusAdm() { var st = DB.statusLoja(loja); $('#admStatus').innerHTML = '<i class="' + (st.aberta ? 'on' : '') + '"></i><b>' + esc(st.texto) + '</b><small>' + (loja.modo === 'auto' ? 'automático' : 'definido manualmente') + '</small>'; }
+  function pintarAjustes() {
+    preencher($('#fLoja'), ['nome', 'slogan', 'bairro', 'cidade', 'endereco', 'telefone', 'whatsapp', 'instagram', 'faixaPreco']);
+    preencher($('#fHorario'), ['abre', 'fecha', 'modo']);
+    var folgas = loja.folgas || [];
+    $('#dias').innerHTML = DIAS.map(function (d, k) { return '<label><input type="checkbox" value="' + k + '"' + (folgas.indexOf(k) >= 0 ? ' checked' : '') + '><span>' + d + '</span></label>'; }).join('');
+    pintarStatusAdm();
+    var fb = $('#fBairros'); preencher(fb, ['pedidoMinimo', 'tempoRetirada']);
+    fb.entregaAtiva.checked = loja.entregaAtiva !== false; fb.retiradaAtiva.checked = loja.retiradaAtiva !== false;
+    linhasBairros(loja.bairros);
+    var fp = $('#fPag'), pg = loja.pagamentos || {};
+    ['pix', 'cartao', 'dinheiro'].forEach(function (k) { fp[k].checked = pg[k] !== false; });
+    fp.tipoChavePix.value = loja.tipoChavePix || 'telefone'; fp.chavePix.value = loja.chavePix || digitos(loja.telefone); fp.titularPix.value = loja.titularPix || loja.nome;
+    pintarCores(loja.cor || COR_PADRAO);
+    $('#chTema').checked = d.documentElement.getAttribute('data-tema') !== 'claro';
+    var fd = $('#fPedidos'); fd.alertaNovo.value = loja.alertaNovo || 5; fd.tempoAlvo.value = loja.tempoAlvo || 40;
+    $('#chAuto').checked = LS.getItem('ab_auto') === '1';
+    var u = DB.usuario() || {}; $('#fConta').nome.value = u.nome || ''; $('#fConta').email.value = u.email || '';
+    var cs = clientes();
+    $('#infoPed').textContent = pedidos.length + ' pedidos registrados'; $('#infoCli').textContent = cs.length + ' clientes'; $('#infoCard').textContent = cardapio.itens.length + ' itens em ' + cardapio.categorias.length + ' categorias';
+    pintarSom(); secaoAdm(secAdm);
+  }
+  // loja
+  $('#fLoja').addEventListener('submit', function (e) {
+    e.preventDefault(); var f = e.target, o = {};
+    ['nome', 'slogan', 'bairro', 'cidade', 'endereco', 'telefone', 'whatsapp', 'instagram', 'faixaPreco'].forEach(function (k) { o[k] = f[k].value.trim(); });
+    if (!o.nome) { toast('Informe o nome da loja'); f.nome.focus(); return; }
+    o.whatsapp = digitos(o.whatsapp); if (o.whatsapp && o.whatsapp.length <= 11) o.whatsapp = '55' + o.whatsapp;
+    o.instagram = o.instagram.replace(/^@/, '');
+    DB.salvarLoja(o).then(function (l) { loja = l; f.whatsapp.value = l.whatsapp; f.instagram.value = l.instagram; salvo(f); });
+  });
+  // horários
+  $('#fHorario').addEventListener('submit', function (e) {
+    e.preventDefault(); var f = e.target;
+    var folgas = $$('#dias input:checked').map(function (x) { return +x.value; });
+    DB.salvarLoja({ abre: f.abre.value, fecha: f.fecha.value, modo: f.modo.value, folgas: folgas }).then(function (l) { loja = l; pintarLoja(); pintarStatusAdm(); salvo(f); });
+  });
+  // entrega
+  $('#fBairros').addEventListener('submit', function (e) {
+    e.preventDefault(); var f = e.target;
+    if (!f.entregaAtiva.checked && !f.retiradaAtiva.checked) { toast('Deixe pelo menos entrega ou retirada ligada'); return; }
+    var bs = lerBairros().filter(function (b) { return b.nome; });
+    if (f.entregaAtiva.checked && !bs.length) { toast('Cadastre pelo menos um bairro para entrega'); return; }
+    DB.salvarLoja({ entregaAtiva: f.entregaAtiva.checked, retiradaAtiva: f.retiradaAtiva.checked, pedidoMinimo: +f.pedidoMinimo.value || 0, tempoRetirada: f.tempoRetirada.value.trim(), bairros: bs })
+      .then(function (l) { loja = l; linhasBairros(l.bairros); salvo(f); });
+  });
   $('#addBairro').onclick = function () { var l = lerBairros(); l.push({ nome: '', taxa: 0, tempo: '40–50 min' }); linhasBairros(l); $$('#listaBairros [data-b=nome]').pop().focus(); };
   $('#listaBairros').addEventListener('click', function (e) { var k = e.target.getAttribute('data-rmb'); if (k != null) { var l = lerBairros(); l.splice(+k, 1); linhasBairros(l); } });
+  // pagamentos
+  $('#fPag').addEventListener('submit', function (e) {
+    e.preventDefault(); var f = e.target, pg = { pix: f.pix.checked, cartao: f.cartao.checked, dinheiro: f.dinheiro.checked };
+    $('#pagErro').textContent = '';
+    if (!pg.pix && !pg.cartao && !pg.dinheiro) { $('#pagErro').textContent = 'Deixe pelo menos uma forma de pagamento ligada.'; return; }
+    if (pg.pix && !f.chavePix.value.trim()) { $('#pagErro').textContent = 'Informe a chave Pix.'; f.chavePix.focus(); return; }
+    DB.salvarLoja({ pagamentos: pg, tipoChavePix: f.tipoChavePix.value, chavePix: f.chavePix.value.trim(), titularPix: f.titularPix.value.trim() }).then(function (l) { loja = l; salvo(f); });
+  });
+  // aparência
+  var corSel = COR_PADRAO;
+  function hexOk(v) { v = String(v || '').trim(); if (v[0] !== '#') v = '#' + v; return /^#[0-9a-f]{6}$/i.test(v) ? v.toLowerCase() : null; }
+  function pintarCores(c) {
+    corSel = hexOk(c) || COR_PADRAO;
+    $('#cores').innerHTML = CORES.map(function (x) { return '<button type="button" class="cor' + (x[0] === corSel ? ' ativo' : '') + '" data-cor="' + x[0] + '" style="--c:' + x[0] + '" title="' + x[1] + '" aria-label="' + x[1] + '"><i></i><span>' + x[1].replace(' (padrão)', '') + '</span></button>'; }).join('');
+    $('#corInput').value = corSel; $('#corHex').value = corSel;
+    previaCor(corSel);
+  }
+  function previaCor(c) { U.aplicarCor(c); $$('#cores .cor').forEach(function (b) { b.classList.toggle('ativo', b.getAttribute('data-cor') === c); }); $('meta[name=theme-color]'); }
+  $('#cores').addEventListener('click', function (e) { var b = e.target.closest('[data-cor]'); if (b) { corSel = b.getAttribute('data-cor'); $('#corInput').value = corSel; $('#corHex').value = corSel; previaCor(corSel); } });
+  $('#corInput').addEventListener('input', function (e) { corSel = e.target.value.toLowerCase(); $('#corHex').value = corSel; previaCor(corSel); });
+  $('#corHex').addEventListener('input', function (e) { var c = hexOk(e.target.value); if (c) { corSel = c; $('#corInput').value = c; previaCor(c); } });
+  $('#corSalvar').onclick = function () { DB.salvarLoja({ cor: corSel }).then(function (l) { loja = l; salvo($('#corSalvo')); toast('Cor aplicada no site, cardápio e painel'); }); };
+  $('#corPadrao').onclick = function () { pintarCores(COR_PADRAO); DB.salvarLoja({ cor: '' }).then(function (l) { loja = l; U.aplicarCor(''); toast('Cor padrão restaurada'); }); };
   $('#chTema').onchange = function (e) { aplicarTema(e.target.checked ? 'escuro' : 'claro'); };
+  // pedidos e avisos
   $('#chSom').onchange = function (e) { somOn = e.target.checked; LS.setItem('ab_som', somOn ? '1' : '0'); pintarSom(); };
+  $('#chAuto').onchange = function (e) { LS.setItem('ab_auto', e.target.checked ? '1' : '0'); toast(e.target.checked ? 'Pedidos novos entram direto em preparo' : 'Pedidos novos esperam você aceitar'); };
+  $('#fPedidos').addEventListener('submit', function (e) { e.preventDefault(); var f = e.target; DB.salvarLoja({ alertaNovo: Math.max(1, +f.alertaNovo.value || 5), tempoAlvo: Math.max(5, +f.tempoAlvo.value || 40) }).then(function (l) { loja = l; pintarPedidos(); salvo(f); }); });
   $('#testarSom').onclick = function () { liberarAudio(); var s = somOn; somOn = true; avisarNovo({ numero: '0000', cliente: { nome: 'Teste' }, total: 0, tipo: 'retirada' }); somOn = s; };
+  // conta
+  $('#fConta').addEventListener('submit', function (e) { e.preventDefault(); var f = e.target; DB.salvarUsuario({ nome: f.nome.value.trim() }).then(function () { salvo(f); }); });
+  $('#fSenha').addEventListener('submit', function (e) {
+    e.preventDefault(); var f = e.target; $('#senhaErro').textContent = '';
+    if (f.nova.value !== f.nova2.value) { $('#senhaErro').textContent = 'As senhas novas não são iguais.'; return; }
+    DB.trocarSenha(f.atual.value, f.nova.value).then(function () { f.reset(); salvo(f); }, function (er) { $('#senhaErro').textContent = er.message; });
+  });
+  $('#sair').onclick = function () { confirmar('Sair do painel?', 'Você vai precisar do e-mail e da senha para entrar de novo.', 'Sair', function () { DB.sair().then(function () { location.reload(); }); }); };
+  // dados
+  function baixarCSV(nome, linhas) {
+    var csv = '\ufeff' + linhas.map(function (l) { return l.map(function (c) { c = String(c == null ? '' : c); return /[";\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c; }).join(';'); }).join('\n');
+    var a = d.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' })); a.download = nome; d.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+    toast('Planilha baixada');
+  }
+  function num(v) { return String(Math.round(v * 100) / 100).replace('.', ','); }
+  function dataHora(t) { var x = new Date(t); return x.toLocaleDateString('pt-BR') + ' ' + U.hora(t); }
+  $('#expPed').onclick = function () {
+    baixarCSV('pedidos-aego.csv', [['Pedido', 'Data', 'Status', 'Cliente', 'Telefone', 'Tipo', 'Bairro', 'Endereço', 'Itens', 'Subtotal', 'Entrega', 'Total', 'Pagamento', 'Observação']].concat(
+      pedidos.slice().sort(function (a, b) { return b.criadoEm - a.criadoEm; }).map(function (p) { return [p.numero, dataHora(p.criadoEm), U.rotuloStatus(p.status, p.tipo), p.cliente.nome, p.cliente.telefone, p.tipo === 'entrega' ? 'Entrega' : 'Retirada', p.endereco ? p.endereco.bairro : '', p.endereco ? endLinha(p.endereco) : '', p.itens.map(function (x) { return x.qtd + 'x ' + x.nome; }).join(', '), num(p.subtotal || 0), num(p.taxa || 0), num(p.total), U.pagamento(p.pagamento), p.obs || '']; })));
+  };
+  $('#expCli').onclick = function () {
+    baixarCSV('clientes-aego.csv', [['Nome', 'Telefone', 'WhatsApp', 'Pedidos', 'Total gasto', 'Último pedido', 'Endereço']].concat(
+      clientes().sort(function (a, b) { return b.gasto - a.gasto; }).map(function (c) { return [c.nome, c.telefone, linkZap(c.telefone), c.validos, num(c.gasto), dataHora(c.ultimo), Object.keys(c.ends)[0] || 'Retirada']; })));
+  };
+  $('#expCard').onclick = function () {
+    baixarCSV('cardapio-aego.csv', [['Item', 'Categoria', 'Preço', 'Disponível', 'Destaque', 'Descrição']].concat(
+      cardapio.itens.map(function (i) { return [i.nome, nomeCat(i.cat), num(i.preco), i.disponivel ? 'Sim' : 'Não', i.destaque ? 'Sim' : 'Não', i.desc]; })));
+  };
   $('#restaurar').onclick = function () { confirmar('Restaurar demonstração?', 'Apaga pedidos, cardápio e ajustes deste navegador e volta aos dados de exemplo.', 'Restaurar', function () { DB.restaurarDemo().then(function () { location.reload(); }); }); };
-  $('#sair').onclick = function () { DB.sair().then(function () { location.reload(); }); };
 
   /* ---------- início ---------- */
   U.abertura('ab_intro_painel');

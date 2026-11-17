@@ -265,28 +265,34 @@
     });
   }
 
+  function digitos(t) { return String(t || '').replace(/\D/g, ''); }
   /* ---------------- checkout ---------------- */
   var tipo = ler('ab_tipo', 'entrega'), forma = 'pix';
   function abrirCheckout() {
     if (!sacola.length) return abrirSacola();
     var st = DB.statusLoja(loja);
+    var entOn = loja.entregaAtiva !== false, retOn = loja.retiradaAtiva !== false || !entOn;
+    if (tipo === 'entrega' && !entOn) tipo = 'retirada'; if (tipo === 'retirada' && !retOn) tipo = 'entrega';
+    var pgs = loja.pagamentos || { pix: true, cartao: true, dinheiro: true }, formas = ['pix', 'cartao', 'dinheiro'].filter(function (k) { return pgs[k] !== false; });
+    if (!formas.length) formas = ['pix'];
+    if (formas.indexOf(forma) < 0) forma = formas[0];
     var h = cab('Finalizar pedido', 'sacola') + '<form class="folha-corpo" id="ck" novalidate><div class="ck">' +
       '<h3>Seus dados</h3>' +
       '<label class="campo" data-c="nome"><span>Nome</span><input name="nome" autocomplete="name" value="' + esc(cliente.nome) + '" placeholder="Como podemos te chamar?"></label>' +
       '<label class="campo" data-c="telefone"><span>Telefone (WhatsApp)</span><input name="telefone" inputmode="tel" autocomplete="tel" value="' + esc(cliente.telefone) + '" placeholder="(71) 90000-0000"></label>' +
-      '<h3>Como quer receber?</h3><div class="seg">' +
-      '<label><input type="radio" name="tipo" value="entrega"' + (tipo === 'entrega' ? ' checked' : '') + '><span>' + IC.moto + 'Entrega<small id="ckTempoE"></small></span></label>' +
-      '<label><input type="radio" name="tipo" value="retirada"' + (tipo === 'retirada' ? ' checked' : '') + '><span>' + IC.loja + 'Retirada<small>' + esc(loja.tempoRetirada) + ' · grátis</small></span></label></div>' +
+      '<h3>Como quer receber?</h3><div class="seg' + (entOn && retOn ? '' : ' um') + '">' +
+      '<label' + (entOn ? '' : ' hidden') + '><input type="radio" name="tipo" value="entrega"' + (tipo === 'entrega' ? ' checked' : '') + '><span>' + IC.moto + 'Entrega<small id="ckTempoE"></small></span></label>' +
+      '<label' + (retOn ? '' : ' hidden') + '><input type="radio" name="tipo" value="retirada"' + (tipo === 'retirada' ? ' checked' : '') + '><span>' + IC.loja + 'Retirada<small>' + esc(loja.tempoRetirada) + ' · grátis</small></span></label></div>' +
       '<div id="ckEnd"><h3>Endereço de entrega</h3>' +
       '<label class="campo" data-c="bairro"><span>Bairro</span><select name="bairro"><option value="">Selecione o bairro…</option>' + loja.bairros.map(function (b) { return '<option value="' + esc(b.nome) + '"' + (b.nome === cliente.bairro ? ' selected' : '') + '>' + esc(b.nome) + ' — ' + brl(b.taxa) + '</option>'; }).join('') + '</select></label>' +
       '<div class="dupla"><label class="campo" data-c="rua"><span>Rua</span><input name="rua" autocomplete="address-line1" value="' + esc(cliente.rua) + '" placeholder="Rua / Avenida"></label>' +
       '<label class="campo" data-c="numero"><span>Número</span><input name="numero" inputmode="numeric" value="' + esc(cliente.numero) + '"></label></div>' +
       '<label class="campo"><span>Complemento <small style="font-weight:500;color:var(--mut)">(opcional)</small></span><input name="complemento" value="' + esc(cliente.complemento) + '" placeholder="Apto, bloco, referência"></label></div>' +
       '<p class="aviso" id="ckRet" hidden>Retire no balcão: ' + esc(loja.endereco) + '</p>' +
-      '<h3>Pagamento</h3><div class="seg tres">' +
-      '<label><input type="radio" name="forma" value="pix"' + (forma === 'pix' ? ' checked' : '') + '><span>' + IC.pix + 'Pix</span></label>' +
-      '<label><input type="radio" name="forma" value="cartao"' + (forma === 'cartao' ? ' checked' : '') + '><span>' + IC.cartao + 'Cartão<small>na entrega</small></span></label>' +
-      '<label><input type="radio" name="forma" value="dinheiro"' + (forma === 'dinheiro' ? ' checked' : '') + '><span>' + IC.dinheiro + 'Dinheiro</span></label></div>' +
+      '<h3>Pagamento</h3><div class="seg ' + ['um', 'um', '', 'tres'][formas.length] + '">' +
+      '<label' + (formas.indexOf('pix') < 0 ? ' hidden' : '') + '><input type="radio" name="forma" value="pix"' + (forma === 'pix' ? ' checked' : '') + '><span>' + IC.pix + 'Pix</span></label>' +
+      '<label' + (formas.indexOf('cartao') < 0 ? ' hidden' : '') + '><input type="radio" name="forma" value="cartao"' + (forma === 'cartao' ? ' checked' : '') + '><span>' + IC.cartao + 'Cartão<small>na entrega</small></span></label>' +
+      '<label' + (formas.indexOf('dinheiro') < 0 ? ' hidden' : '') + '><input type="radio" name="forma" value="dinheiro"' + (forma === 'dinheiro' ? ' checked' : '') + '><span>' + IC.dinheiro + 'Dinheiro</span></label></div>' +
       '<label class="campo" id="ckTroco" data-c="troco" style="margin-top:10px" hidden><span>Troco para quanto?</span><input name="troco" inputmode="decimal" placeholder="Ex.: 100 (deixe vazio se não precisar)"></label>' +
       '<p class="aviso" id="ckPix" hidden>A chave Pix aparece na confirmação e também vai no resumo pelo WhatsApp.</p>' +
       '<label class="campo" style="margin-top:12px"><span>Observação do pedido <small style="font-weight:500;color:var(--mut)">(opcional)</small></span><input name="obs" maxlength="140" placeholder="Ex.: interfone com defeito"></label>' +
@@ -361,6 +367,7 @@
     l.push('*Total: ' + brl(p.total) + '*', '');
     l.push(p.tipo === 'entrega' ? 'Entregar em: ' + p.endereco.rua + ', ' + p.endereco.numero + (p.endereco.complemento ? ' — ' + p.endereco.complemento : '') + ' · ' + p.endereco.bairro : 'Vou retirar no balcão');
     l.push('Pagamento: ' + U.pagamento(p.pagamento));
+    if (p.pagamento.forma === 'pix') l.push('Chave Pix: ' + (loja.chavePix || digitos(loja.telefone)));
     if (p.obs) l.push('Obs.: ' + p.obs);
     l.push('Cliente: ' + p.cliente.nome + ' · ' + p.cliente.telefone);
     l.push('', 'Acompanhar: ' + location.href.split('#')[0] + '#pedido-' + p.id);
@@ -400,7 +407,7 @@
     h += '<div class="caixa"><h4>Itens</h4>' + p.itens.map(function (x) { return '<div class="li"><span>' + x.qtd + '× ' + esc(x.nome) + (U.detalheItem(x) ? '<small>' + esc(U.detalheItem(x)) + '</small>' : '') + '</span><span>' + brl(x.total) + '</span></div>'; }).join('') +
       '<div class="li" style="border-top:1px dashed rgba(244,237,226,.2);margin-top:6px;padding-top:9px"><span>Taxa de entrega</span><span>' + (p.taxa ? brl(p.taxa) : 'Grátis') + '</span></div>' +
       '<div class="li"><b>Total</b><b>' + brl(p.total) + '</b></div><div class="li"><span>Pagamento</span><span>' + esc(U.pagamento(p.pagamento)) + '</span></div></div>';
-    if (p.pagamento.forma === 'pix' && idx < 3 && !canc) h += '<div class="caixa"><h4>Pix</h4><div class="li"><span>Chave (telefone)<small>' + esc(loja.telefone) + ' · ' + esc(loja.nome) + '</small></span><button class="btn-sec" type="button" data-copiar="' + esc(loja.telefone.replace(/\D/g, '')) + '" style="height:38px">Copiar</button></div></div>';
+    if (p.pagamento.forma === 'pix' && idx < 3 && !canc) { var chv = loja.chavePix || digitos(loja.telefone); h += '<div class="caixa"><h4>Pix</h4><div class="li"><span>Chave (' + esc(loja.tipoChavePix || 'telefone') + ')<small>' + esc(chv) + ' · ' + esc(loja.titularPix || loja.nome) + '</small></span><button class="btn-sec" type="button" data-copiar="' + esc(chv) + '" style="height:38px">Copiar</button></div></div>'; }
     h += '<div class="ac-acoes"><a class="btn-sec btn-zap" target="_blank" rel="noopener" href="https://wa.me/' + esc(loja.whatsapp) + '?text=' + encodeURIComponent(textoZap(p)) + '">' + IC.zap + 'Enviar resumo pelo WhatsApp</a>' +
       '<button class="btn-sec" type="button" data-acao="fechar">Voltar ao cardápio</button></div>';
     el.innerHTML = h;
@@ -442,7 +449,7 @@
       '<div class="info-l"><b>Endereço</b>' + esc(loja.endereco) + ' · <a href="' + esc(loja.mapa) + '" target="_blank" rel="noopener">ver no mapa</a></div>' +
       '<div class="info-l"><b>Horário</b>Todos os dias, das ' + esc(loja.abre) + ' às ' + esc(loja.fecha) + ' · <span style="color:' + (DB.statusLoja(loja).aberta ? '#5cc98a' : '#f0715f') + ';font-weight:700">' + esc(DB.statusLoja(loja).texto) + '</span></div>' +
       '<div class="info-l"><b>Contato</b><a href="https://wa.me/' + esc(loja.whatsapp) + '" target="_blank" rel="noopener">' + esc(loja.telefone) + ' (WhatsApp)</a></div>' +
-      '<div class="info-l"><b>Pagamento</b>Pix, cartão na entrega (crédito/débito) e dinheiro</div>' +
+      '<div class="info-l"><b>Pagamento</b>' + esc(U.formasTexto(loja)) + '</div>' +
       '<div class="info-l"><b>Pedido mínimo</b>' + brl(loja.pedidoMinimo) + ' · retirada em ' + esc(loja.tempoRetirada) + '</div>' +
       '<div class="info-l"><b>Taxas de entrega</b>' + loja.bairros.map(function (b) { return '<div class="bairro-li"><span>' + esc(b.nome) + '</span><span>' + brl(b.taxa) + ' · ' + esc(b.tempo) + '</span></div>'; }).join('') + '</div></div>');
   }

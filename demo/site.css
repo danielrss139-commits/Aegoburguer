@@ -1,5 +1,5 @@
 /* AEGO Burguer — site institucional (escuro) */
-:root { --bg: #17120f; --bg2: #1d1713; --bg3: #221b16; --tx: #f4ede2; --mut: #b8ab9c; --linha: rgba(244, 237, 226, .12); --linha-amb: rgba(224, 164, 58, .26); }
+:root { --bg: #17120f; --bg2: #1d1713; --bg3: #221b16; --tx: #f4ede2; --mut: #b8ab9c; --linha: rgba(244, 237, 226, .12); --linha-amb: rgb(var(--amb-rgb) / .26); }
 html { background: var(--bg); scroll-behavior: smooth; scroll-padding-top: 76px; }
 body { background: var(--bg); color: var(--tx); font-size: 16px; line-height: 1.6; overflow-x: hidden; }
 ::selection { background: var(--amb); color: #17120f; }
@@ -15,10 +15,10 @@ body { background: var(--bg); color: var(--tx); font-size: 16px; line-height: 1.
 .btn svg { transition: transform .3s var(--ease); }
 .btn:hover svg { transform: translateX(4px); }
 .btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-.btn-cheio { background: var(--amb); color: #1a130c; }
-.btn-cheio:hover { background: #ebb24c; }
+.btn-cheio { background: var(--amb); color: var(--amb-on); }
+.btn-cheio:hover { background: color-mix(in srgb, var(--amb) 88%, #fff); }
 .btn-contorno { border-color: var(--amb); color: var(--amb); text-transform: uppercase; letter-spacing: .12em; font-size: 14px; }
-.btn-contorno:hover { background: var(--amb); color: #1a130c; }
+.btn-contorno:hover { background: var(--amb); color: var(--amb-on); }
 .btn-borda { border-color: rgba(244, 237, 226, .38); color: var(--tx); }
 .btn-borda:hover { border-color: var(--tx); }
 .link-sub { color: var(--tx); text-decoration: none; text-transform: uppercase; letter-spacing: .12em; font-weight: 600; font-size: 14px; padding: 8px 0; border-bottom: 2px solid var(--amb); }
@@ -65,7 +65,7 @@ body { background: var(--bg); color: var(--tx); font-size: 16px; line-height: 1.
 html.intro .hero-flut img, html.intro .hero-t .ln-i, html.intro .hero .entra { animation-play-state: paused; }
 
 /* antigravidade: camadas separadas que flutuam e se juntam ao rolar */
-.ag { position: relative; overflow: hidden; background: radial-gradient(60% 50% at 70% 55%, rgba(224, 164, 58, .08), rgba(224, 164, 58, 0) 70%), var(--bg); border-top: 1px solid var(--linha); }
+.ag { position: relative; overflow: hidden; background: radial-gradient(60% 50% at 70% 55%, rgb(var(--amb-rgb) / .08), rgb(var(--amb-rgb) / 0) 70%), var(--bg); border-top: 1px solid var(--linha); }
 .ag-grid { display: grid; gap: 20px; }
 .ag-lista { order: 3; }
 .ag-lista { list-style: none; margin: 28px 0 0; padding: 0; display: grid; gap: 0; }
@@ -73,7 +73,7 @@ html.intro .hero-flut img, html.intro .hero-t .ln-i, html.intro .hero .entra { a
 .ag-lista li:last-child { border-bottom: 1px solid var(--linha); }
 .ag-lista b { font-family: var(--display); font-weight: 400; color: var(--amb); font-size: 18px; min-width: 26px; }
 .ag-palco { position: relative; height: 560px; contain: layout; }
-.ag-brilho { position: absolute; left: 50%; top: 50%; width: 100%; aspect-ratio: 1; margin: -50% 0 0 -50%; border-radius: 50%; background: radial-gradient(closest-side, rgba(224, 164, 58, .16), rgba(224, 164, 58, 0)); pointer-events: none; }
+.ag-brilho { position: absolute; left: 50%; top: 50%; width: 100%; aspect-ratio: 1; margin: -50% 0 0 -50%; border-radius: 50%; background: radial-gradient(closest-side, rgb(var(--amb-rgb) / .16), rgb(var(--amb-rgb) / 0)); pointer-events: none; }
 .ag-cam { position: absolute; top: 0; left: 0; right: 0; margin: 0 auto; width: calc(min(76%, 300px) * var(--w) / 416); will-change: transform; }
 .ag-cam img { width: 100%; height: auto; animation: paira var(--ft, 4s) ease-in-out infinite; animation-delay: var(--fd, 0s); will-change: transform; }
 @keyframes paira { 0%, 100% { transform: translate3d(0, -5px, 0); } 50% { transform: translate3d(0, 6px, 0); } }
@@ -99,7 +99,7 @@ html.intro .hero-flut img, html.intro .hero-t .ln-i, html.intro .hero .entra { a
 @media (min-width: 1040px) { .cards { grid-template-columns: repeat(3, 1fr); } }
 .card { display: flex; flex-direction: column; padding: 20px; border: 1px solid var(--linha-amb); background: var(--bg2); border-radius: 3px; text-decoration: none; transition: transform .35s var(--ease), border-color .3s; }
 .card:active { transform: scale(.985); }
-.card:hover { transform: translateY(-4px); border-color: rgba(224, 164, 58, .55); }
+.card:hover { transform: translateY(-4px); border-color: rgb(var(--amb-rgb) / .55); }
 .card-foto { aspect-ratio: 4 / 3; overflow: hidden; background: #0d0a08; border-radius: 2px; }
 .card-foto img { width: 100%; height: 100%; object-fit: cover; transition: transform .6s var(--ease); }
 .card:hover .card-foto img { transform: scale(1.04); }
@@ -152,7 +152,7 @@ html.intro .hero-flut img, html.intro .hero-t .ln-i, html.intro .hero .entra { a
 .mapa-t { position: absolute; left: 14px; bottom: 12px; padding: 8px 12px; background: rgba(23, 18, 15, .86); border: 1px solid var(--linha); font-size: 13px; font-weight: 600; letter-spacing: .04em; }
 
 /* CTA final */
-.cta { padding: clamp(84px, 14vw, 140px) 0; background: radial-gradient(60% 70% at 50% 40%, rgba(224, 164, 58, .07), transparent 70%), var(--bg); }
+.cta { padding: clamp(84px, 14vw, 140px) 0; background: radial-gradient(60% 70% at 50% 40%, rgb(var(--amb-rgb) / .07), transparent 70%), var(--bg); }
 .cta .lead { margin-bottom: 36px; color: rgba(244, 237, 226, .82); }
 .cta .titulo { font-size: clamp(40px, 10.5vw, 76px); }
 
@@ -201,7 +201,7 @@ html.intro .hero-flut img, html.intro .hero-t .ln-i, html.intro .hero .entra { a
 /* contato */
 .info { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
 .info li { display: flex; align-items: flex-start; gap: 14px; padding: 16px; background: var(--bg2); border: 1px solid var(--linha); border-radius: 12px; }
-.info-ic { flex: 0 0 auto; width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: rgba(224, 164, 58, .12); color: var(--amb); }
+.info-ic { flex: 0 0 auto; width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; background: rgb(var(--amb-rgb) / .12); color: var(--amb); }
 .info-ic svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .info small { display: block; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; font-weight: 700; color: var(--amb); margin: 2px 0 4px; }
 .info b { display: block; font-weight: 500; color: rgba(244, 237, 226, .92); line-height: 1.45; overflow-wrap: anywhere; }
@@ -251,7 +251,7 @@ html.intro .hero-flut img, html.intro .hero-t .ln-i, html.intro .hero .entra { a
 .ag::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 120px; background: linear-gradient(180deg, var(--bg), rgba(23, 18, 15, 0)); pointer-events: none; z-index: 0; }
 .sec-porque { background: linear-gradient(180deg, var(--bg) 0%, var(--bg2) 22%, var(--bg2) 78%, var(--bg) 100%); }
 .sec-local { background: linear-gradient(180deg, var(--bg) 0%, var(--bg3) 20%, var(--bg3) 80%, var(--bg) 100%); }
-.cta { background: radial-gradient(60% 70% at 50% 40%, rgba(224, 164, 58, .07), transparent 70%), linear-gradient(180deg, var(--bg) 0%, #120e0b 100%); }
+.cta { background: radial-gradient(60% 70% at 50% 40%, rgb(var(--amb-rgb) / .07), transparent 70%), linear-gradient(180deg, var(--bg) 0%, #120e0b 100%); }
 .rodape { border-top: 0; background: linear-gradient(180deg, #120e0b 0%, #0f0b09 100%); }
 
 /* v7 — montagem do burger */

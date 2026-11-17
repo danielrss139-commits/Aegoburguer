@@ -3,7 +3,7 @@
 @font-face { font-family: "Hanken Grotesk"; src: url("fonts/hanken-grotesk.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
 
 :root {
-  --amb: #e0a43a;          /* âmbar/mostarda da marca */
+  --amb: #e0a43a; --amb-rgb: 224 164 58; --amb-on: #1a130c;          /* âmbar/mostarda da marca */
   --amb-2: #c98d26;
   --carvao: #17120f;       /* quase preto amarronzado */
   --creme: #f4ede2;

@@ -259,6 +259,9 @@
     var a = minutos(loja.abre), f = minutos(loja.fecha), dentro;
     if (loja.modo === 'aberta') return { aberta: true, texto: 'Aberto agora' };
     if (loja.modo === 'fechada') return { aberta: false, texto: 'Fechado no momento' };
+    var folgas = loja.folgas || [], diaRef = d.getDay();
+    if (f <= a && agora < f) diaRef = (diaRef + 6) % 7;   // madrugada conta como o dia anterior
+    if (folgas.indexOf(diaRef) >= 0) return { aberta: false, texto: 'Fechado hoje' };
     dentro = f > a ? (agora >= a && agora < f) : (agora >= a || agora < f);   // fecha depois da meia-noite
     function hx(m) { var h = Math.floor(m / 60) % 24, mm = m % 60; return (h < 10 ? '0' : '') + h + 'h' + (mm < 10 ? '0' : '') + mm; }
     return dentro ? { aberta: true, texto: 'Aberto · Fecha às ' + hx(f) } : { aberta: false, texto: 'Fechado · Abrimos às ' + hx(a) };
@@ -315,18 +318,38 @@
     },
 
     entrar: function (email, senha) {
-      if (String(email).trim().toLowerCase() === 'demo@burguer.app' && senha === 'demo1234') {
+      if (String(email).trim().toLowerCase() === 'demo@burguer.app' && senha === (ler('ab_senha', null) || 'demo1234')) {
         var u = { email: 'demo@burguer.app', nome: 'Equipe AEGO' }; gravar(K.sessao, u); return P(u);
       }
       return Promise.reject(new Error('E-mail ou senha incorretos.'));
     },
     sair: function () { LS.removeItem(K.sessao); return P(); },
     usuario: function () { return ler(K.sessao, null); },
-    restaurarDemo: function () { semear(true); avisar(K.pedidos); avisar(K.cardapio); avisar(K.loja); return P(); }
+    trocarSenha: function (atual, nova) {
+      if (atual !== (ler('ab_senha', null) || 'demo1234')) return Promise.reject(new Error('A senha atual está incorreta.'));
+      if (String(nova).length < 6) return Promise.reject(new Error('A nova senha precisa de pelo menos 6 caracteres.'));
+      gravar('ab_senha', nova); return P(true);
+    },
+    salvarUsuario: function (parcial) { var u = ler(K.sessao, null) || {}; for (var k in parcial) u[k] = parcial[k]; gravar(K.sessao, u); return P(copia(u)); },
+    restaurarDemo: function () { LS.removeItem('ab_senha'); semear(true); avisar(K.pedidos); avisar(K.cardapio); avisar(K.loja); return P(); }
   };
 
   /* ---------------- utilidades comuns às 3 páginas ---------------- */
   var U = {
+    /* cor da marca escolhida no painel: vale para site, cardápio e painel */
+    aplicarCor: function (hex) {
+      var m = /^#?([0-9a-f]{6})$/i.exec(String(hex || '')), el = document.documentElement;
+      if (!m) { ['--amb', '--amb-rgb', '--amb-on'].forEach(function (k) { el.style.removeProperty(k); }); return; }
+      var n = parseInt(m[1], 16), r = n >> 16 & 255, g = n >> 8 & 255, b = n & 255;
+      var lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+      el.style.setProperty('--amb', '#' + m[1]); el.style.setProperty('--amb-rgb', r + ' ' + g + ' ' + b);
+      el.style.setProperty('--amb-on', lum > 0.52 ? '#1a130c' : '#ffffff');
+    },
+    formasTexto: function (loja) {
+      var p = loja.pagamentos || {}, l = [];
+      if (p.pix !== false) l.push('Pix'); if (p.cartao !== false) l.push('cartão na entrega (crédito/débito)'); if (p.dinheiro !== false) l.push('dinheiro');
+      return l.length > 1 ? l.slice(0, -1).join(', ') + ' e ' + l[l.length - 1] : (l[0] || 'Pix');
+    },
     precoMenu: function (v) { // "R$19": sem espaço e sem ",00" (centavos pequenos só se houver)
       v = Number(v) || 0; var i = Math.floor(v), c = Math.round((v - i) * 100);
       if (c === 100) { i++; c = 0; }
@@ -360,13 +383,13 @@
     monograma: function (cls) {
       return '<svg class="mono ' + (cls || '') + '" viewBox="0 0 120 120" role="img" aria-label="AEGO Burguer">' +
         '<circle cx="60" cy="60" r="60" fill="#17120f"/>' +
-        '<circle class="mono-anel" cx="60" cy="60" r="53" fill="none" stroke="#e0a43a" stroke-width="1.6"/>' +
+        '<circle class="mono-anel" cx="60" cy="60" r="53" fill="none" style="stroke:var(--amb,#e0a43a)" stroke-width="1.6"/>' +
         '<circle cx="60" cy="60" r="47" fill="none" stroke="rgba(224,164,58,.28)" stroke-width="1"/>' +
         '<path d="M38 50c2-11 11-17 22-17s20 6 22 17z" fill="none" stroke="#f4ede2" stroke-width="3.2" stroke-linejoin="round"/>' +
-        '<path d="M36 59.5h48" stroke="#e0a43a" stroke-width="4.4" stroke-linecap="round"/>' +
+        '<path d="M36 59.5h48" style="stroke:var(--amb,#e0a43a)" stroke-width="4.4" stroke-linecap="round"/>' +
         '<path d="M37 68c4 3.2 8 3.2 11.5 0s7.5-3.2 11.5 0 8 3.2 11.5 0 7.5-3.2 11.5 0" fill="none" stroke="#f4ede2" stroke-width="2.6" stroke-linecap="round"/>' +
         '<path d="M38 76h44c0 6-5 10-11 10H49c-6 0-11-4-11-10z" fill="none" stroke="#f4ede2" stroke-width="3.2" stroke-linejoin="round"/>' +
-        '<circle cx="52" cy="42" r="1.4" fill="#e0a43a"/><circle cx="61" cy="39.5" r="1.4" fill="#e0a43a"/><circle cx="69" cy="43" r="1.4" fill="#e0a43a"/>' +
+        '<circle cx="52" cy="42" r="1.4" style="fill:var(--amb,#e0a43a)"/><circle cx="61" cy="39.5" r="1.4" style="fill:var(--amb,#e0a43a)"/><circle cx="69" cy="43" r="1.4" style="fill:var(--amb,#e0a43a)"/>' +
         '</svg>';
     },
     marcaTexto: function () { return '<span class="wm"><b>AEGO</b><i>Burguer</i></span>'; },
@@ -404,4 +427,6 @@
 
   w.AEGO_DB = DB;
   w.AEGO_U = U;
+  try { U.aplicarCor(ler(K.loja, LOJA).cor); } catch (e) {}
+  ouvir(K.loja, function () { try { U.aplicarCor(ler(K.loja, LOJA).cor); } catch (e) {} }, 5000);
 })(window);

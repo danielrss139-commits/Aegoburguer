@@ -17,6 +17,7 @@
 <link rel="stylesheet" href="base.css">
 <link rel="stylesheet" href="site.css">
 <script>try{if(!sessionStorage.getItem('ab_intro'))document.documentElement.classList.add('intro')}catch(e){}</script>
+<script>try{var c=(JSON.parse(localStorage.getItem("ab_loja")||"{}").cor||"").replace("#","");if(/^[0-9a-f]{6}$/i.test(c)){var n=parseInt(c,16),r=n>>16&255,g=n>>8&255,b=n&255,e=document.documentElement.style;e.setProperty("--amb","#"+c);e.setProperty("--amb-rgb",r+" "+g+" "+b);e.setProperty("--amb-on",(.2126*r+.7152*g+.0722*b)/255>.52?"#1a130c":"#ffffff")}}catch(x){}</script>
 </head>
 <body>
 <div id="intro" aria-hidden="true"></div>
@@ -155,7 +156,7 @@
               <g fill="none" stroke="#3a2f26" stroke-width="2"><path d="M-10 60 L410 95"/><path d="M-10 170 L410 140"/><path d="M90 -10 L130 230"/><path d="M290 -10 L250 230"/></g>
               <g fill="#221b16"><rect x="150" y="20" width="80" height="50" rx="6"/><rect x="300" y="110" width="80" height="20" rx="6"/><rect x="20" y="185" width="70" height="30" rx="6"/></g>
               <circle cx="200" cy="112" r="34" fill="rgba(224,164,58,.12)"/>
-              <path d="M200 128s-16-14-16-26a16 16 0 0 1 32 0c0 12-16 26-16 26z" fill="#e0a43a"/><circle cx="200" cy="102" r="5.5" fill="#17120f"/>
+              <path d="M200 128s-16-14-16-26a16 16 0 0 1 32 0c0 12-16 26-16 26z" style="fill:var(--amb,#e0a43a)"/><circle cx="200" cy="102" r="5.5" fill="#17120f"/>
             </svg>
             <span class="mapa-t">Abrir no Google Maps ↗</span>
           </a>
