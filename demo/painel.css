@@ -357,3 +357,13 @@ body { font-size: 15px; line-height: 1.45; min-height: 100vh; }
   .comanda h1 { font: 700 16px/1.2 "Courier New", monospace; text-align: center; margin: 0 0 6px; }
   .comanda p { margin: 4px 0; } .comanda hr { border: 0; border-top: 1px dashed #000; }
 }
+/* botão WhatsApp (logo oficial, proporcional) */
+.zap-ic { width: 19px; height: 19px; fill: currentColor; stroke: none; flex: none; }
+.btn-zap, a.btn-zap { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: #25d366; border-color: #25d366; color: #fff; font-weight: 800; letter-spacing: .01em; text-decoration: none; text-shadow: 0 1px 0 rgba(0, 0, 0, .12); box-shadow: 0 6px 18px -8px rgba(37, 211, 102, .7); }
+.btn-zap:hover { background: #20bd5a; border-color: #20bd5a; }
+.fx-bts .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 46px; }
+.folha-pe .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.folha-pe .btn-amb .zap-ic { width: 18px; height: 18px; }
+.cnc-lista > *, .cli-peds > * { min-width: 0; }
+.cli-cab > div { min-width: 0; }
+.cli-cab .selo { display: table; margin: 6px 0 0; }
