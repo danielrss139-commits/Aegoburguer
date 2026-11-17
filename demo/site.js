@@ -42,32 +42,40 @@
     quadro();
   })();
 
-  // antigravidade: camadas afastadas que se juntam conforme a seção sobe na tela
+  // montagem: as camadas caem uma a uma (pão de baixo → pão de cima) conforme a seção sobe na tela
   (function () {
     var palco = d.getElementById('agPalco'); if (!palco) return;
     var cams = [].slice.call(palco.querySelectorAll('.ag-cam'));
-    // posições (px na escala da foto original, 416 px de largura): explodido x montado
-    var EXP = [0, 209, 366, 528, 720], MON = [0, 150, 232, 282, 372], ALT = [187, 143, 148, 171, 145];
-    var ROT = [-5, 4, -3, 3.5, -4], DX = [-10, 14, -8, 10, -6];
-    var topoPalco = 0, altPalco = 0, k = 1, vh = 0, ultimo = -1, vivo = false, raf = 0;
+    var itens = [].slice.call(d.querySelectorAll('.ag-lista li'));
+    // posições montadas (px na escala da foto original, 416 px de largura)
+    var MON = [0, 150, 232, 282, 372], ALT = [187, 143, 148, 171, 145];
+    var ROT = [-14, 10, -8, 9, -6], DX = [-60, 70, -50, 60, -40];
+    var topoPalco = 0, altPalco = 0, k = 1, vh = 0, ultimo = -1, vivo = false, raf = 0, montado = false;
     function medir() {
       var r = palco.getBoundingClientRect();
       topoPalco = r.top + window.scrollY; altPalco = palco.offsetHeight; vh = window.innerHeight;
       k = cams[0].offsetWidth / 418; ultimo = -1;
     }
+    function cl(v) { return v < 0 ? 0 : v > 1 ? 1 : v; }
+    function volta(x) { var c1 = 1.4, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); } // easeOutBack: assenta com um quique
     function quadro() {
       raf = 0; if (!vivo) return;
       var y = window.scrollY;
       if (y !== ultimo) {
         ultimo = y;
-        var t = reduz ? 1 : Math.max(0, Math.min(1, (y + vh - topoPalco) / (vh * .55 + altPalco * .55)));
-        var e = 1 - Math.pow(1 - t, 3), ab = 1.04 - .72 * e;             // abertura 1.04 → 0.32
-        var fim = (MON[4] + ab * (EXP[4] - MON[4]) + ALT[4]) * k, base = (altPalco - fim) / 2;
+        // começa quando o palco entra por baixo; termina com o centro do palco a 55% da tela
+        var t = reduz ? 1 : cl((y + vh - topoPalco) / (altPalco * .5 + vh * .45));
+        var base = (altPalco - (MON[4] + ALT[4]) * k) / 2;
         for (var i = 0; i < cams.length; i++) {
-          var c = +cams[i].getAttribute('data-c');
-          var py = base + (MON[c] + ab * (EXP[c] - MON[c])) * k;
-          cams[i].style.transform = 'translate3d(' + (DX[c] * ab).toFixed(1) + 'px,' + py.toFixed(1) + 'px,0) rotate(' + (ROT[c] * ab).toFixed(2) + 'deg)';
+          var c = +cams[i].getAttribute('data-c'), ordem = 4 - c;           // pão de baixo cai primeiro
+          var p = cl((t - ordem * .14) / .44), e = volta(p), f = 1 - e;
+          var py = base + MON[c] * k - f * (altPalco * .75 + 60);
+          cams[i].style.transform = 'translate3d(' + (DX[c] * f).toFixed(1) + 'px,' + py.toFixed(1) + 'px,0) rotate(' + (ROT[c] * f).toFixed(2) + 'deg)';
+          cams[i].style.opacity = cl(p * 2.2).toFixed(2);
+          if (itens[c]) itens[c].classList.toggle('ag-on', p > .9);
         }
+        var ok = t >= .999;
+        if (ok !== montado) { montado = ok; palco.classList.toggle('montado', ok); }
       }
       if (!reduz) raf = requestAnimationFrame(quadro);
     }
@@ -77,7 +85,7 @@
     d.addEventListener('visibilitychange', function () { ligar(visivel); });
     window.addEventListener('resize', function () { medir(); ligar(visivel); }, { passive: true });
     window.addEventListener('load', function () { medir(); ligar(visivel); });
-    medir(); vivo = true; quadro(); vivo = visivel; // posição inicial já montada no lugar certo
+    medir(); vivo = true; quadro(); vivo = visivel;
   })();
 
   function aplicarLoja(l) {

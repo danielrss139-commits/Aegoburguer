@@ -245,3 +245,25 @@ html.intro .hero-flut img, html.intro .hero-t .ln-i, html.intro .hero .entra { a
     mask-composite: intersect; }
   .hero-veu { background: linear-gradient(90deg, rgba(15, 11, 9, .9) 0%, rgba(15, 11, 9, .6) 32%, rgba(15, 11, 9, .08) 58%, rgba(15, 11, 9, 0) 100%), linear-gradient(180deg, rgba(15, 11, 9, 0) 0%, rgba(15, 11, 9, 0) 78%, var(--bg) 100%); }
 }
+
+/* v7 — transições suaves entre seções (fade de cor, sem linha marcando a troca) */
+.ag { border-top: 0; }
+.ag::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 120px; background: linear-gradient(180deg, var(--bg), rgba(23, 18, 15, 0)); pointer-events: none; z-index: 0; }
+.sec-porque { background: linear-gradient(180deg, var(--bg) 0%, var(--bg2) 22%, var(--bg2) 78%, var(--bg) 100%); }
+.sec-local { background: linear-gradient(180deg, var(--bg) 0%, var(--bg3) 20%, var(--bg3) 80%, var(--bg) 100%); }
+.cta { background: radial-gradient(60% 70% at 50% 40%, rgba(224, 164, 58, .07), transparent 70%), linear-gradient(180deg, var(--bg) 0%, #120e0b 100%); }
+.rodape { border-top: 0; background: linear-gradient(180deg, #120e0b 0%, #0f0b09 100%); }
+
+/* v7 — montagem do burger */
+.ag-cam { will-change: transform, opacity; }
+.ag-brilho { transition: transform .8s var(--ease), opacity .8s; opacity: .55; transform: scale(.85); }
+.montado .ag-brilho { opacity: 1; transform: scale(1.08); }
+.montado .ag-cam:last-of-type img { animation: paira var(--ft, 4s) ease-in-out infinite, assenta .5s var(--ease); }
+@keyframes assenta { 0% { transform: scaleY(.94); } 60% { transform: scaleY(1.03); } 100% { transform: none; } }
+.ag-lista li { transition: color .35s, padding-left .35s var(--ease), border-color .35s; color: rgba(244, 237, 226, .5); }
+.ag-lista li.ag-on { color: var(--tx); padding-left: 6px; }
+.ag-lista li b { transition: transform .35s var(--ease); display: inline-block; }
+.ag-lista li.ag-on b { transform: scale(1.15); }
+@media (prefers-reduced-motion: reduce) { .ag-lista li { color: var(--tx); } }
+.js .ag-lista li.revela { transition: opacity .7s var(--ease), transform .7s var(--ease), color .35s, padding-left .35s var(--ease); }
+.hero::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 180px; z-index: -1; pointer-events: none; background: linear-gradient(180deg, rgba(23, 18, 15, 0), rgba(23, 18, 15, .7) 55%, var(--bg)); }
