@@ -27,7 +27,7 @@
    ===================================================================== */
 (function (w) {
   'use strict';
-  var VERSAO = 4;
+  var VERSAO = 5;
   var K = { versao: 'ab_versao', loja: 'ab_loja', cardapio: 'ab_cardapio', pedidos: 'ab_pedidos', seq: 'ab_seq', sessao: 'ab_sessao' };
   var LS = w.localStorage;
 
@@ -94,9 +94,37 @@
     { id: 'sobremesas', nome: 'Sobremesas' }
   ];
 
+  // informações extras de cada item: [linha de detalhes, selos]
+  var INFO = {
+    'combo-aego': ['Burger + batata + lata · serve 1', ['Mais pedido']],
+    'combo-smash': ['Burger + batata + lata · serve 1', ['Economize']],
+    'combo-casal': ['2 burgers + 2 porções · serve 2', ['Para dividir']],
+    'fininho': ['Smash 90 g · serve 1 · pronto em ~12 min', ['Leve']],
+    'smash-bacon': ['2 × smash 90 g · serve 1 · ~15 min', ['Mais pedido']],
+    'triplo-smash': ['3 × smash 90 g · serve 1 · ~15 min', []],
+    'aego-burguer': ['Blend 120 g · serve 1 · ~15 min', ['Clássico']],
+    'aego-salad': ['Blend 120 g · com salada · ~15 min', []],
+    'crispy': ['Blend 120 g · crocante · ~15 min', ['Novo']],
+    'chicken': ['Frango empanado · serve 1 · ~18 min', []],
+    'melt': ['2 × blend 120 g · serve 1 · ~18 min', ['Queridinho']],
+    'duplo-bacon': ['2 × blend 120 g · serve 1 · ~18 min', ['Mais pedido']],
+    'triplo-bacon': ['3 × blend 120 g · para muita fome · ~20 min', ['Gigante']],
+    'batata': ['Porção média · serve 1 a 2', []],
+    'batata-cb': ['Porção média · serve 2', ['Mais pedido']],
+    'onion': ['16 anéis · serve 1 a 2', []],
+    'nuggets': ['7 unidades + molho', []],
+    'refri': ['Lata 350 ml', []], 'refri-zero': ['Lata 350 ml · zero açúcar', []], 'guarana': ['Lata 350 ml', []],
+    'limonada': ['Copo 500 ml · feita na hora', []],
+    'shake': ['Copo 400 ml', []],
+    'brownie': ['Sobremesa individual', []],
+    'petit': ['Sobremesa individual', []]
+  };
   function it(id, cat, nome, desc, preco, foto, o) {
     var x = { id: id, cat: cat, nome: nome, desc: desc, preco: preco, foto: 'img/' + foto + '.webp', disponivel: true, destaque: false, precoAntigo: 0, extras: '', retirar: [] };
     for (var k in (o || {})) x[k] = o[k];
+    // preços redondos, sem centavos (cardápio mostra só o número — estudo Cornell/CIA, 2009)
+    x.preco = Math.floor(x.preco); if (x.precoAntigo) x.precoAntigo = Math.floor(x.precoAntigo);
+    if (INFO[id]) { x.info = INFO[id][0]; if (INFO[id][1]) x.tags = INFO[id][1]; }
     return x;
   }
   var B = { extras: 'burger' };
@@ -282,6 +310,11 @@
 
   /* ---------------- utilidades comuns às 3 páginas ---------------- */
   var U = {
+    precoMenu: function (v) { // sem "R$" e sem ",00": só o número (centavos pequenos se houver)
+      v = Number(v) || 0; var i = Math.floor(v), c = Math.round((v - i) * 100);
+      var n = String(i).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      return '<span class="pm">' + n + (c ? '<small>,' + (c < 10 ? '0' : '') + c + '</small>' : '') + '</span>';
+    },
     brl: function (v) { return 'R$ ' + (Number(v) || 0).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); },
     esc: function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); },
     rotuloStatus: function (s, tipo) {

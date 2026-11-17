@@ -294,3 +294,8 @@ textarea:focus, .campo input:focus, .campo select:focus { border-color: var(--am
 .folha.acomp-viva .acomp > * { animation: none; }
 @media (prefers-reduced-motion: reduce) { .js-mov .rv { opacity: 1; transform: none; } .capa-foto, .capa-foto img, .perfil-loja, .linha-taxa { animation: none; } }
 html.oculto .ac-icone.vivo, html.oculto .etapa.atual .bol::after { animation-play-state: paused; }
+
+/* preço só com o número (sem R$ e sem centavos) */
+.pm small { font-size: .62em; vertical-align: .38em; margin-left: 1px; }
+.preco { font-size: 18px; font-weight: 700; letter-spacing: .01em; }
+.preco .off { margin-left: 8px; padding: 2px 6px; border-radius: 6px; background: rgba(92, 201, 138, .15); color: var(--ok); font-style: normal; font-size: 12px; font-weight: 800; vertical-align: 2px; }

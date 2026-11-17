@@ -46,8 +46,9 @@
     return '(' + n.slice(0, 2) + ') ' + n.slice(2, 7) + '-' + n.slice(7);
   }
   function precoHtml(i) {
-    if (i.precoAntigo && i.precoAntigo > i.preco) return '<span class="preco"><span class="promo">' + brl(i.preco) + '</span><s>' + brl(i.precoAntigo) + '</s></span>';
-    return '<span class="preco">' + brl(i.preco) + '</span>';
+    var pm = U.precoMenu;
+    if (i.precoAntigo && i.precoAntigo > i.preco) return '<span class="preco"><span class="promo">' + pm(i.preco) + '</span><s>' + pm(i.precoAntigo) + '</s><em class="off">-' + Math.round((1 - i.preco / i.precoAntigo) * 100) + '%</em></span>';
+    return '<span class="preco">' + pm(i.preco) + '</span>';
   }
 
   /* ---------------- cabeçalho da loja ---------------- */

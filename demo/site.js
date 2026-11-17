@@ -106,7 +106,7 @@
     if (escolha.length < 6) itens.filter(function (i) { return i.destaque && escolha.indexOf(i) < 0; }).forEach(function (i) { if (escolha.length < 6) escolha.push(i); });
     d.getElementById('cards').innerHTML = escolha.map(function (i) {
       return '<a class="card revela" href="pedir.html#item-' + U.esc(i.id) + '"><div class="card-foto"><img src="' + U.esc(i.foto) + '" alt="' + U.esc(i.nome) + '" width="900" height="900" loading="lazy" decoding="async"></div>' +
-        '<h3>' + U.esc(i.nome) + '</h3><p>' + U.esc(i.desc) + '</p><div class="card-preco">' + U.brl(i.preco) + '<small>Pedir →</small></div></a>';
+        '<h3>' + U.esc(i.nome) + '</h3><p>' + U.esc(i.desc) + '</p><div class="card-preco">' + U.precoMenu(i.preco) + '<small>Pedir →</small></div></a>';
     }).join('');
     observar(d.getElementById('cards'));
   }
