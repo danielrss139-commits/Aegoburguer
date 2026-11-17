@@ -21,12 +21,12 @@
 html,body{background:var(--carvao)}
 body{font-family:"Hanken Grotesk",system-ui,sans-serif;color:var(--creme);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}
-.capa{position:relative;width:100%;max-width:560px;margin:0 auto;aspect-ratio:1/1;overflow:hidden}
-.capa .flut{position:absolute;inset:0;animation:flut 7s ease-in-out infinite alternate}
-.capa img{width:100%;height:100%;object-fit:cover;display:block}
+.capa{position:relative;width:100%;max-width:560px;margin:0 auto;aspect-ratio:1100/830;overflow:hidden}
+.capa .flut{position:absolute;inset:auto 0 0 0;aspect-ratio:1100/768;animation:flut 7s ease-in-out infinite alternate}
+.capa img{width:100%;height:100%;object-fit:cover;display:block;-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 4%);mask-image:linear-gradient(180deg,transparent 0,#000 4%)}
 .capa::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(23,18,15,.35),rgba(23,18,15,0) 30%,rgba(23,18,15,0) 62%,var(--carvao) 100%)}
-@keyframes flut{from{transform:translate3d(0,-1.5%,0) scale(1.04)}to{transform:translate3d(0,1.5%,0) scale(1.04)}}
-main{max-width:560px;margin:-56px auto 0;padding:0 22px calc(36px + env(safe-area-inset-bottom));position:relative}
+@keyframes flut{from{transform:translate3d(0,-1%,0)}to{transform:translate3d(0,1.5%,0)}}
+main{max-width:560px;margin:-40px auto 0;padding:0 22px calc(36px + env(safe-area-inset-bottom));position:relative}
 .marca{font-family:"Anton",Impact,sans-serif;font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--amb)}
 h1{font-family:"Anton",Impact,sans-serif;font-weight:400;font-size:clamp(38px,11vw,54px);line-height:1.02;margin:8px 0 14px;text-transform:uppercase}
 h1 em{font-style:normal;color:var(--amb)}
@@ -48,15 +48,17 @@ small{display:block;margin-top:22px;font-size:12.5px;color:rgba(244,237,226,.45)
 @keyframes sobe{to{opacity:1;transform:none}}
 @media (min-width:900px){
  body{display:grid;grid-template-columns:1fr 1fr;align-items:center;min-height:100vh}
- .capa{max-width:none;height:100vh;aspect-ratio:auto}
- .capa::after{background:linear-gradient(90deg,rgba(23,18,15,0) 60%,var(--carvao) 100%)}
+ .capa{max-width:none;height:100vh;aspect-ratio:auto;display:flex;align-items:center}
+ .capa .flut{position:relative;inset:auto;width:100%;aspect-ratio:1100/768}
+ .capa img{-webkit-mask-image:linear-gradient(180deg,transparent 0,#000 5%,#000 88%,transparent 100%);mask-image:linear-gradient(180deg,transparent 0,#000 5%,#000 88%,transparent 100%)}
+ .capa::after{background:linear-gradient(90deg,rgba(23,18,15,0) 70%,var(--carvao) 100%)}
  main{margin:0 auto;padding:48px 40px}
 }
 @media (prefers-reduced-motion:reduce){.capa .flut,.entra{animation:none!important;opacity:1;transform:none}}
 </style>
 </head>
 <body>
-<div class="capa" aria-hidden="true"><div class="flut"><img src="/demo/img/hero-aego-m.webp" alt="" width="1024" height="1024" fetchpriority="high" decoding="async"></div></div>
+<div class="capa" aria-hidden="true"><div class="flut"><img src="/demo/img/hero-aego-m.webp" alt="" width="1100" height="768" fetchpriority="high" decoding="async"></div></div>
 <main>
   <p class="marca entra" style="--i:0">AEGO Burguer</p>
   <h1 class="entra" style="--i:1">Sua hamburgueria com <em>pedidos on-line</em></h1>

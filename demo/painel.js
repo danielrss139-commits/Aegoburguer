@@ -252,7 +252,7 @@
     var doPer = pedidos.filter(function (p) { return p.criadoEm >= desde; });
     var validos = doPer.filter(function (p) { return p.status !== 'cancelado'; });
     var fat = validos.reduce(function (s, p) { return s + p.total; }, 0), canc = doPer.length - validos.length;
-    var ticket = validos.length ? fat / validos.length : 0;
+    var ticket = validos.length ? Math.round(fat / validos.length) : 0;
     var entregas = validos.filter(function (p) { return p.tipo === 'entrega'; }).length;
     $('#kpis').innerHTML =
       '<div class="kpi dest"><small>Faturamento</small><b>' + brl(fat) + '</b><em>' + (periodo === 'hoje' ? 'hoje' : 'últimos 7 dias') + '</em></div>' +

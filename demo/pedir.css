@@ -299,3 +299,15 @@ html.oculto .ac-icone.vivo, html.oculto .etapa.atual .bol::after { animation-pla
 .pm small { font-size: .62em; vertical-align: .38em; margin-left: 1px; }
 .preco { font-size: 18px; font-weight: 700; letter-spacing: .01em; }
 .preco .off { margin-left: 8px; padding: 2px 6px; border-radius: 6px; background: rgba(92, 201, 138, .15); color: var(--ok); font-style: normal; font-size: 12px; font-weight: 800; vertical-align: 2px; }
+
+/* ============ v6 (17/11): capa com o burger inteiro (sem corte em cima) ============ */
+.capa-foto { top: 12px; bottom: 30px; left: auto; right: 0; aspect-ratio: 760 / 494; }
+.capa-foto img { object-fit: contain; object-position: 100% 50%; animation-name: capaFlutS;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 7%, #000 88%, transparent 100%), linear-gradient(90deg, transparent 0, #000 30%);
+  -webkit-mask-composite: source-in;
+  mask-image: linear-gradient(180deg, transparent 0, #000 7%, #000 88%, transparent 100%), linear-gradient(90deg, transparent 0, #000 30%);
+  mask-composite: intersect; }
+.capa-foto::after { display: none; }
+@keyframes capaFlutS { 0%, 100% { transform: translate3d(0, 3px, 0); } 50% { transform: translate3d(0, -5px, 0); } }
+@media (min-width: 600px) { .capa { height: 250px; } .capa-foto { right: 4%; } }
+.pm .rs { font-size: .8em; margin-right: 1px; }

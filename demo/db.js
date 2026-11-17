@@ -27,7 +27,7 @@
    ===================================================================== */
 (function (w) {
   'use strict';
-  var VERSAO = 5;
+  var VERSAO = 6;
   var K = { versao: 'ab_versao', loja: 'ab_loja', cardapio: 'ab_cardapio', pedidos: 'ab_pedidos', seq: 'ab_seq', sessao: 'ab_sessao' };
   var LS = w.localStorage;
 
@@ -49,8 +49,8 @@
     instagram: 'aegoburguer',
     abre: '11:00',
     fecha: '01:00',
-    modo: 'auto',                // auto (segue o horário) | aberta | fechada
-    faixaPreco: 'R$ 40–60 por pessoa',
+    modo: 'aberta',              // demo sempre aceita pedidos (no cliente real: 'auto' segue o horário) | aberta | fechada
+    faixaPreco: 'R$40–60 por pessoa',
     tempoRetirada: '20–30 min',
     pedidoMinimo: 20,
     bairros: [
@@ -310,12 +310,19 @@
 
   /* ---------------- utilidades comuns às 3 páginas ---------------- */
   var U = {
-    precoMenu: function (v) { // sem "R$" e sem ",00": só o número (centavos pequenos se houver)
+    precoMenu: function (v) { // "R$19": sem espaço e sem ",00" (centavos pequenos só se houver)
       v = Number(v) || 0; var i = Math.floor(v), c = Math.round((v - i) * 100);
+      if (c === 100) { i++; c = 0; }
       var n = String(i).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-      return '<span class="pm">' + n + (c ? '<small>,' + (c < 10 ? '0' : '') + c + '</small>' : '') + '</span>';
+      return '<span class="pm"><span class="rs">R$</span>' + n + (c ? '<small>,' + (c < 10 ? '0' : '') + c + '</small>' : '') + '</span>';
     },
-    brl: function (v) { return 'R$ ' + (Number(v) || 0).toFixed(2).replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, '.'); },
+    brl: function (v) { // R$19 quando é inteiro; R$19,50 só quando tem centavos
+      v = Math.round((Number(v) || 0) * 100) / 100;
+      var neg = v < 0; v = Math.abs(v);
+      var i = Math.floor(v), c = Math.round((v - i) * 100);
+      var n = String(i).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      return (neg ? '-' : '') + 'R$' + n + (c ? ',' + (c < 10 ? '0' : '') + c : '');
+    },
     esc: function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); },
     rotuloStatus: function (s, tipo) {
       return { novo: 'Recebido', preparo: 'Em preparo', saiu: tipo === 'retirada' ? 'Pronto para retirada' : 'Saiu para entrega', concluido: tipo === 'retirada' ? 'Retirado' : 'Entregue', cancelado: 'Cancelado' }[s] || s;

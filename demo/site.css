@@ -111,7 +111,7 @@ html.intro .hero-flut img, html.intro .hero-t .ln-i, html.intro .hero .entra { a
 /* por que */
 .sec-porque { background: var(--bg2); }
 .topicos { margin-top: 56px; display: grid; }
-@media (min-width: 760px) {
+@media (min-width: 900px) {
   .hero-flut { inset: -5% -4%; top: -5%; left: -4%; width: auto; aspect-ratio: auto; }
   .hero-flut::after { display: none; }
   .hero-flut img { object-position: 70% 40%; }
@@ -223,3 +223,25 @@ html.intro .hero-flut img, html.intro .hero-t .ln-i, html.intro .hero .entra { a
 .zap-fab:active { transform: scale(.94); }
 @media (prefers-reduced-motion: reduce) { .zap-fab { transition: none; } }
 .card-preco .pm small { font-size: .6em; vertical-align: .4em; }
+
+/* ============ v6 (17/11): burger do hero inteiro (sem corte em cima), em qualquer tela; preço "R$19" ============ */
+.pm .rs { font-size: .74em; margin-right: 1px; }
+@keyframes antigravS { 0%, 100% { transform: translate3d(0, 5px, 0); } 50% { transform: translate3d(0, -7px, 0); } }
+@media (max-width: 899px) {
+  /* foto começa abaixo do topo fixo (logo + botão = 74px) e não cresce na animação */
+  .hero-fundo { height: calc(80px + env(safe-area-inset-top, 0px) + 74vw); }
+  .hero-flut { top: calc(80px + env(safe-area-inset-top, 0px)); animation-name: antigravS; }
+  .hero-flut img { -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 5%, #000 70%, transparent 100%); mask-image: linear-gradient(180deg, transparent 0, #000 5%, #000 70%, transparent 100%); }
+  .hero-veu { background: linear-gradient(180deg, rgba(15, 11, 9, .25) 0, rgba(15, 11, 9, 0) 80px, rgba(15, 11, 9, .15) calc(80px + 40vw), rgba(23, 18, 15, .8) calc(80px + 62vw), var(--bg) calc(80px + 72vw)); }
+  .hero-c { padding-top: calc(80px + env(safe-area-inset-top, 0px) + 58vw); }
+}
+@media (min-width: 900px) {
+  /* foto inteira (contain), presa embaixo à direita, sempre abaixo do topo fixo: nada do burger fica cortado */
+  .hero-flut { --hw: min(70vw, calc((100vh - 110px) * 1.7917)); inset: auto 0 auto auto; left: auto; top: calc(50% - var(--hw) * .2791 + 34px); width: var(--hw); height: auto; aspect-ratio: 1600 / 893; animation-name: antigravS; }
+  .hero-flut img { object-fit: contain; object-position: 100% 100%;
+    -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 6%, #000 86%, transparent 100%), linear-gradient(90deg, transparent 0, #000 28%);
+    -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(180deg, transparent 0, #000 6%, #000 86%, transparent 100%), linear-gradient(90deg, transparent 0, #000 28%);
+    mask-composite: intersect; }
+  .hero-veu { background: linear-gradient(90deg, rgba(15, 11, 9, .9) 0%, rgba(15, 11, 9, .6) 32%, rgba(15, 11, 9, .08) 58%, rgba(15, 11, 9, 0) 100%), linear-gradient(180deg, rgba(15, 11, 9, 0) 0%, rgba(15, 11, 9, 0) 78%, var(--bg) 100%); }
+}
