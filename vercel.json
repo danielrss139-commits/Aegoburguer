@@ -1,0 +1,9 @@
+{
+  "redirects": [
+    { "source": "/demo", "destination": "/demo/", "permanent": true }
+  ],
+  "headers": [
+    { "source": "/demo/sw.js", "headers": [{ "key": "Cache-Control", "value": "no-cache" }] },
+    { "source": "/demo/(img|fonts|icons)/(.*)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=2592000" }] }
+  ]
+}

@@ -1,0 +1,54 @@
+/* AEGO Burguer — base comum (fontes, marca, utilidades) */
+@font-face { font-family: "Anton"; src: url("fonts/anton.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Hanken Grotesk"; src: url("fonts/hanken-grotesk.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
+
+:root {
+  --amb: #e0a43a;          /* âmbar/mostarda da marca */
+  --amb-2: #c98d26;
+  --carvao: #17120f;       /* quase preto amarronzado */
+  --creme: #f4ede2;
+  --display: "Anton", "Oswald", Impact, "Arial Narrow", sans-serif;
+  --sans: "Hanken Grotesk", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; font-family: var(--sans); -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
+img, svg { display: block; max-width: 100%; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+a { color: inherit; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* marca em texto: AEGO (claro) + Burguer (âmbar) */
+.wm { font-family: var(--display); font-weight: 400; letter-spacing: .005em; line-height: 1; white-space: nowrap; }
+.wm b { font-weight: 400; color: var(--wm-cor, #f4ede2); }
+.wm i { font-style: normal; color: var(--amb); }
+.mono { width: 100%; height: auto; }
+
+/* abertura (monograma) — só transform/opacity, 1x por sessão */
+#intro { position: fixed; inset: 0; z-index: 999; background: var(--carvao); display: grid; place-items: center; }
+#intro .intro-c { display: grid; justify-items: center; gap: 18px; }
+#intro .intro-m { width: 92px; }
+#intro .wm { font-size: 30px; }
+html:not(.intro) #intro { display: none; }
+
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+/* ============ movimento (v2) — só transform/opacity ============ */
+/* burger flutuante: sobe e desce + sombra elíptica no chão em sincronia */
+.flut-cena { position: relative; }
+.flut { position: relative; z-index: 1; animation: flutua 3.6s ease-in-out infinite; will-change: transform; }
+.flut img { width: 100%; height: auto; }
+.flut-sombra { position: absolute; z-index: 0; left: 14%; right: 14%; bottom: -5%; height: 12%; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, .62), rgba(0, 0, 0, .28) 55%, rgba(0, 0, 0, 0));
+  animation: sombra 3.6s ease-in-out infinite; will-change: transform, opacity; }
+@keyframes flutua { 0%, 100% { transform: translate3d(0, 0, 0) rotate(-.6deg); } 50% { transform: translate3d(0, -13px, 0) rotate(.6deg); } }
+@keyframes sombra { 0%, 100% { transform: scale(1); opacity: .95; } 50% { transform: scale(.8); opacity: .55; } }
+/* loops pausados fora da tela (.parado) ou com a aba oculta (html.oculto) */
+.parado .flut, .parado .flut-sombra, .parado .ag-cam img, .parado .grao,
+html.oculto .flut, html.oculto .flut-sombra, html.oculto .ag-cam img, html.oculto .grao { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .flut, .flut-sombra, .ag-cam img, .grao, .ac-icone.vivo, .etapa.atual .bol::after, .btn-topo::after { animation: none !important; }
+}

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>AEGO Burguer · Site, cardápio e pedidos para hamburguerias</title>
+<meta name="description" content="Site próprio, cardápio com pedidos on-line e painel da loja para a sua hamburgueria.">
+<meta name="theme-color" content="#17120f">
+<link rel="icon" href="/demo/icons/favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="/demo/icons/apple-touch-icon.png">
+<meta property="og:title" content="AEGO Burguer">
+<meta property="og:description" content="Site, cardápio com pedidos e painel da loja para hamburguerias.">
+<meta property="og:image" content="/demo/img/hero-aego.webp">
+<link rel="preload" href="/demo/img/hero-aego-m.webp" as="image" fetchpriority="high">
+<link rel="preload" href="/demo/fonts/anton.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+@font-face{font-family:"Anton";src:url(/demo/fonts/anton.woff2) format("woff2");font-display:swap}
+@font-face{font-family:"Hanken Grotesk";src:url(/demo/fonts/hanken-grotesk.woff2) format("woff2");font-weight:100 900;font-display:swap}
+:root{--amb:#e0a43a;--carvao:#17120f;--creme:#f4ede2;--ease:cubic-bezier(.2,.8,.2,1)}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--carvao)}
+body{font-family:"Hanken Grotesk",system-ui,sans-serif;color:var(--creme);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+.capa{position:relative;width:100%;max-width:560px;margin:0 auto;aspect-ratio:1/1;overflow:hidden}
+.capa .flut{position:absolute;inset:0;animation:flut 7s ease-in-out infinite alternate}
+.capa img{width:100%;height:100%;object-fit:cover;display:block}
+.capa::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(23,18,15,.35),rgba(23,18,15,0) 30%,rgba(23,18,15,0) 62%,var(--carvao) 100%)}
+@keyframes flut{from{transform:translate3d(0,-1.5%,0) scale(1.04)}to{transform:translate3d(0,1.5%,0) scale(1.04)}}
+main{max-width:560px;margin:-56px auto 0;padding:0 22px calc(36px + env(safe-area-inset-bottom));position:relative}
+.marca{font-family:"Anton",Impact,sans-serif;font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--amb)}
+h1{font-family:"Anton",Impact,sans-serif;font-weight:400;font-size:clamp(38px,11vw,54px);line-height:1.02;margin:8px 0 14px;text-transform:uppercase}
+h1 em{font-style:normal;color:var(--amb)}
+.lede{font-size:16.5px;line-height:1.5;color:rgba(244,237,226,.78);max-width:46ch}
+.sec{margin:30px 0 12px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:rgba(244,237,226,.55);font-weight:700}
+.cards{display:grid;gap:12px}
+.card{display:flex;align-items:center;gap:14px;padding:16px;border:1px solid rgba(244,237,226,.12);background:rgba(244,237,226,.04);border-radius:14px;transition:transform .25s var(--ease),border-color .25s,background .25s}
+.card:active{transform:scale(.985)}
+@media (hover:hover){.card:hover{transform:translateY(-2px);border-color:rgba(224,164,58,.55);background:rgba(224,164,58,.07)}}
+.n{flex:0 0 auto;width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-family:"Anton",Impact,sans-serif;font-size:19px;background:var(--amb);color:var(--carvao)}
+.card div{flex:1;min-width:0}
+.card b{display:block;font-size:17px;margin-bottom:2px}
+.card span{font-size:14px;color:rgba(244,237,226,.66);line-height:1.4}
+.seta{flex:0 0 auto;width:22px;height:22px;stroke:var(--amb);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.login{margin-top:16px;font-size:13.5px;color:rgba(244,237,226,.6);line-height:1.5}
+.login code{font-family:inherit;color:var(--creme);font-weight:700}
+small{display:block;margin-top:22px;font-size:12.5px;color:rgba(244,237,226,.45)}
+.entra{opacity:0;transform:translateY(14px);animation:sobe .6s var(--ease) forwards;animation-delay:calc(var(--i,0)*80ms + 120ms)}
+@keyframes sobe{to{opacity:1;transform:none}}
+@media (min-width:900px){
+ body{display:grid;grid-template-columns:1fr 1fr;align-items:center;min-height:100vh}
+ .capa{max-width:none;height:100vh;aspect-ratio:auto}
+ .capa::after{background:linear-gradient(90deg,rgba(23,18,15,0) 60%,var(--carvao) 100%)}
+ main{margin:0 auto;padding:48px 40px}
+}
+@media (prefers-reduced-motion:reduce){.capa .flut,.entra{animation:none!important;opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div class="capa" aria-hidden="true"><div class="flut"><img src="/demo/img/hero-aego-m.webp" alt="" width="1024" height="1024" fetchpriority="high" decoding="async"></div></div>
+<main>
+  <p class="marca entra" style="--i:0">AEGO Burguer</p>
+  <h1 class="entra" style="--i:1">Sua hamburgueria com <em>pedidos on-line</em></h1>
+  <p class="lede entra" style="--i:2">Site próprio, cardápio completo para o cliente pedir pelo celular e um painel para a loja acompanhar tudo ao vivo.</p>
+  <p class="sec entra" style="--i:3">Veja a demonstração</p>
+  <nav class="cards">
+    <a class="card entra" style="--i:4" href="/demo/"><span class="n">1</span><div><b>Site da hamburgueria</b><span>Vitrine com cardápio, fotos e localização</span></div><svg class="seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    <a class="card entra" style="--i:5" href="/demo/pedir.html"><span class="n">2</span><div><b>Cardápio e pedidos</b><span>O cliente monta o lanche, paga e acompanha</span></div><svg class="seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+    <a class="card entra" style="--i:6" href="/demo/painel.html"><span class="n">3</span><div><b>Painel da loja</b><span>Pedidos ao vivo, cardápio e financeiro</span></div><svg class="seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+  </nav>
+  <p class="login entra" style="--i:7">Acesso do painel: <code>demo@burguer.app</code> · senha <code>demo1234</code></p>
+  <small>Demonstração: os pedidos ficam só no seu aparelho.</small>
+</main>
+<script>
+document.addEventListener('visibilitychange',function(){var f=document.querySelector('.capa .flut');if(f)f.style.animationPlayState=document.hidden?'paused':'running'});
+</script>
+</body>
+</html>

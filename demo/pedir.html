@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AEGO Burguer — Peça on-line</title>
+<meta name="description" content="Cardápio completo da AEGO Burguer. Peça para entrega ou retirada e acompanhe seu pedido.">
+<meta name="theme-color" content="#17120f">
+<link rel="manifest" href="manifest-pedir.json">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="color-scheme" content="dark">
+<meta name="apple-mobile-web-app-title" content="AEGO Burguer">
+<link rel="preload" href="fonts/anton.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="base.css">
+<link rel="preload" href="img/capa-aego.webp" as="image" fetchpriority="high">
+<link rel="stylesheet" href="pedir.css">
+</head>
+<body>
+<div class="pg">
+  <!-- INÍCIO -->
+  <div id="v-inicio">
+    <div class="capa" id="capa">
+      <div class="capa-foto" aria-hidden="true"><img src="img/capa-aego.webp" alt="" width="760" height="494" fetchpriority="high" decoding="async"></div>
+      <p class="capa-t">Peça<br><em>on-line</em><small>Entrega ou retirada</small></p>
+    </div>
+    <section class="perfil-loja">
+      <div class="logo-redondo" id="logoRedondo"></div>
+      <h1 id="nomeLoja">AEGO Burguer - <span>Sabor que vicia</span></h1>
+      <div class="loja-meta">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a7 7 0 0 0-7 7c0 5.2 7 13 7 13s7-7.8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>
+        <span id="cidade">São Paulo - SP</span><span class="pt"></span>
+        <button class="link-btn" id="maisInfo" type="button">Mais informações</button>
+      </div>
+      <div class="status-loja" id="statusLoja">…</div>
+    </section>
+    <button class="linha-taxa" id="btnTaxa" type="button">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><path d="M10.3 8.6a1.8 1.8 0 1 1 2.4 1.7c-.5.2-.7.6-.7 1.1v.4M12 13.6h.01"/></svg>
+      <span id="taxaTxt">Calcular taxa e tempo de entrega</span>
+      <svg class="seta" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>
+    </button>
+
+    <div class="barra" id="barra">
+      <div class="barra-logo" id="barraLogo" aria-hidden="true"></div>
+      <button class="sel-cat" id="selCat" type="button" aria-haspopup="dialog"><span id="catAtual">Lista de categorias</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="busca"><label class="sr" for="q">Buscar no cardápio</label><input id="q" type="search" placeholder="Buscar burger, porção, bebida…" autocomplete="off"></div>
+      <button class="btn-busca" id="btnBusca" type="button" aria-label="Buscar"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg></button>
+    </div>
+
+    <section class="bloco" id="blocoDest">
+      <h2 class="titulo-sec">Destaques</h2>
+      <div class="trilho" id="destaques"></div>
+    </section>
+    <div id="secoes"></div>
+    <p class="rod-mini">AEGO Burguer · <a href="index.html">Conheça a casa</a></p>
+  </div>
+
+  <!-- PROMOÇÕES -->
+  <div id="v-promos" class="pagina-sec" hidden>
+    <h2 class="titulo-sec" style="padding:0 4px 12px">Promoções</h2>
+    <div id="listaPromos"></div>
+  </div>
+
+  <!-- PEDIDOS -->
+  <div id="v-pedidos" class="pagina-sec" hidden>
+    <h2 class="titulo-sec" style="padding:0 4px 12px">Meus pedidos</h2>
+    <div id="listaPedidos"></div>
+  </div>
+
+  <!-- PERFIL -->
+  <div id="v-perfil" class="pagina-sec" hidden>
+    <h2 class="titulo-sec" style="padding:0 4px 12px">Perfil</h2>
+    <form id="formPerfil" class="caixa" autocomplete="on">
+      <label class="campo"><span>Nome</span><input name="nome" autocomplete="name" placeholder="Seu nome"></label>
+      <label class="campo"><span>Telefone (WhatsApp)</span><input name="telefone" inputmode="tel" autocomplete="tel" placeholder="(11) 90000-0000"></label>
+      <label class="campo"><span>Rua</span><input name="rua" autocomplete="address-line1" placeholder="Rua / Avenida"></label>
+      <div class="dupla"><label class="campo"><span>Complemento</span><input name="complemento" placeholder="Apto, bloco…"></label><label class="campo"><span>Número</span><input name="numero" inputmode="numeric"></label></div>
+      <label class="campo"><span>Bairro</span><select name="bairro" id="perfilBairro"></select></label>
+      <button class="btn-prim centro" type="submit" style="width:100%">Salvar dados</button>
+    </form>
+    <p class="rod-mini">Seus dados ficam só neste aparelho e preenchem o pedido automaticamente.</p>
+  </div>
+</div>
+
+<button class="sacola-bar" id="sacolaBar" type="button" aria-label="Ver sacola"><span class="qtd" id="sacQtd">0</span><span>Ver sacola</span><span class="tot" id="sacTot">R$ 0,00</span></button>
+
+<nav class="nav" id="nav" aria-label="Navegação">
+  <button type="button" data-v="inicio" class="ativo"><svg viewBox="0 0 24 24"><path d="M3.5 10.5L12 3.5l8.5 7V20a1 1 0 0 1-1 1h-5v-6h-5v6h-5a1 1 0 0 1-1-1z"/></svg>Início</button>
+  <button type="button" data-v="promos"><svg viewBox="0 0 24 24"><path d="M12 2.8l2.1 1.6 2.6-.2.8 2.5 2.2 1.4-.8 2.5.8 2.5-2.2 1.4-.8 2.5-2.6-.2L12 18.4l-2.1-1.6-2.6.2-.8-2.5-2.2-1.4.8-2.5-.8-2.5 2.2-1.4.8-2.5 2.6.2z"/><path d="M9.3 13.3l5.4-5.4M9.5 8.6h.01M14.5 12.6h.01"/></svg>Promoções</button>
+  <button type="button" data-v="pedidos"><svg viewBox="0 0 24 24"><path d="M6 7h12l-1 13.5H7z"/><path d="M9 9V6a3 3 0 0 1 6 0v3"/><path d="M9.5 14l2 2 3.5-3.5"/></svg>Pedidos<span class="bolha" id="bolhaPed" hidden>1</span></button>
+  <button type="button" data-v="perfil"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4.5 20.5c1.2-4 4.2-5.8 7.5-5.8s6.3 1.8 7.5 5.8"/></svg>Perfil</button>
+</nav>
+
+<div class="veu" id="veu" hidden></div>
+<div class="folha" id="folha" role="dialog" aria-modal="true" hidden></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="db.js"></script>
+<script src="pedir.js"></script>
+</body>
+</html>
