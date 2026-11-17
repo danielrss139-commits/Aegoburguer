@@ -27,7 +27,7 @@
    ===================================================================== */
 (function (w) {
   'use strict';
-  var VERSAO = 6;
+  var VERSAO = 7;
   var K = { versao: 'ab_versao', loja: 'ab_loja', cardapio: 'ab_cardapio', pedidos: 'ab_pedidos', seq: 'ab_seq', sessao: 'ab_sessao' };
   var LS = w.localStorage;
 
@@ -158,7 +158,23 @@
 
   /* pedidos de exemplo (últimos 7 dias) */
   function rnd(seed) { return function () { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }; }
-  var NOMES = ['Lucas M.', 'Ana P.', 'Bruno C.', 'Camila R.', 'Diego F.', 'Fernanda L.', 'Gabriel S.', 'Helena T.', 'Igor N.', 'Julia A.', 'Kaio B.', 'Larissa V.', 'Marcos D.', 'Natália G.', 'Otávio H.', 'Paula Q.', 'Rodrigo E.', 'Sofia K.'];
+  // clientes fixos da demonstração (mesmo cliente volta e repete pedido)
+  var CLIENTES = [
+    ['Lucas Martins', '(71) 98812-4407', 'Rua das Acácias', '214', 'Apto 302', 0, 'Pouco gelo no refri'],
+    ['Ana Paula Souza', '(71) 99137-2580', 'Av. Brasil', '1580', '', 1, ''],
+    ['Bruno Carvalho', '(71) 98654-0913', 'Rua Sete de Setembro', '77', 'Casa 2', 2, ''],
+    ['Camila Rocha', '(71) 99902-3346', 'Rua do Sol', '45', 'Bloco B, apto 104', 3, 'Interfone com defeito, ligar ao chegar'],
+    ['Diego Ferreira', '(71) 98277-6158', 'Travessa Esperança', '12', '', 4, ''],
+    ['Fernanda Lima', '(71) 99561-8824', 'Rua Bahia', '903', 'Apto 51', 0, 'Sem cebola em tudo'],
+    ['Gabriel Santos', '(71) 98430-1172', 'Rua das Palmeiras', '330', '', 5, ''],
+    ['Helena Teixeira', '(71) 99218-6045', 'Av. Central', '2201', 'Sala 8', 6, ''],
+    ['Igor Nascimento', '(71) 98705-3391', 'Rua Rio Branco', '58', '', 1, ''],
+    ['Julia Andrade', '(71) 99340-7716', 'Rua Esperança', '167', 'Fundos', 2, ''],
+    ['Marcos Dias', '(71) 98123-9054', 'Rua Nova', '411', '', 3, ''],
+    ['Natália Gomes', '(71) 99674-2238', 'Rua da Paz', '89', 'Apto 12', 0, ''],
+    ['Rodrigo Esteves', '(71) 98946-5103', 'Av. das Flores', '760', '', 4, ''],
+    ['Sofia Kato', '(71) 99485-0627', 'Rua Primavera', '28', 'Casa', 6, 'Troco em notas pequenas']
+  ];
   function itemPedido(i, q, r) {
     var extras = [];
     if (i.extras === 'burger' && r() < .3) extras.push(LOJA.extras[Math.floor(r() * 3)]);
@@ -174,15 +190,16 @@
     function montar(t, status) {
       var n = 1 + Math.floor(r() * 3), itens = [];
       for (var k = 0; k < n; k++) { var i = saco[Math.floor(r() * saco.length)]; itens.push(itemPedido(i, r() < .2 ? 2 : 1, r)); }
-      var entrega = r() < .68, b = LOJA.bairros[Math.floor(r() * LOJA.bairros.length)];
+      var cl = CLIENTES[Math.floor(Math.pow(r(), 1.6) * CLIENTES.length)];   // alguns clientes pedem bem mais que outros
+      var entrega = r() < .68, b = LOJA.bairros[cl[5]];
       var sub = +itens.reduce(function (s, x) { return s + x.total; }, 0).toFixed(2), taxa = entrega ? b.taxa : 0;
       var formas = ['pix', 'pix', 'cartao', 'cartao', 'dinheiro'], f = formas[Math.floor(r() * formas.length)];
       var total = +(sub + taxa).toFixed(2);
       seq++;
-      var p = { id: String(seq), numero: seq, criadoEm: t, cliente: { nome: NOMES[Math.floor(r() * NOMES.length)], telefone: '(71) 9' + (8000 + Math.floor(r() * 1999)) + '-' + (1000 + Math.floor(r() * 8999)) },
-        tipo: entrega ? 'entrega' : 'retirada', endereco: entrega ? { rua: 'Rua Exemplo', numero: String(10 + Math.floor(r() * 900)), complemento: '', bairro: b.nome } : null,
+      var p = { id: String(seq), numero: seq, criadoEm: t, cliente: { nome: cl[0], telefone: cl[1] },
+        tipo: entrega ? 'entrega' : 'retirada', endereco: entrega ? { rua: cl[2], numero: cl[3], complemento: cl[4], bairro: b.nome } : null,
         itens: itens, subtotal: sub, taxa: taxa, total: total,
-        pagamento: { forma: f, trocoPara: f === 'dinheiro' ? Math.ceil(total / 50) * 50 : 0 }, obs: '', status: status,
+        pagamento: { forma: f, trocoPara: f === 'dinheiro' ? Math.ceil(total / 50) * 50 : 0 }, obs: r() < .35 ? cl[6] : '', status: status,
         historico: [{ status: 'novo', em: t }], demo: true };
       if (status !== 'novo') p.historico.push({ status: 'preparo', em: t + 3 * 60000 });
       if (status === 'saiu' || status === 'concluido') p.historico.push({ status: 'saiu', em: t + 22 * 60000 });

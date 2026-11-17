@@ -38,6 +38,7 @@
   <nav class="lado" id="lado" aria-label="Seções do painel">
     <div class="lado-marca"><span id="ladoMono" style="width:40px"></span><span class="wm"><b>AEGO</b><i>Burguer</i></span></div>
     <button type="button" data-aba="pedidos" class="ativo"><svg class="ico" viewBox="0 0 24 24"><rect x="4" y="3.5" width="16" height="17" rx="2.5"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>Pedidos<span class="cont" id="contNovos" hidden>0</span></button>
+    <button type="button" data-aba="concluidos"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M8.3 12.2l2.6 2.6 4.9-5.3"/></svg><span class="rot-l">Concluídos</span></button>
     <button type="button" data-aba="cardapio"><svg class="ico" viewBox="0 0 24 24"><path d="M5 11c.6-4.4 3.4-7 7-7s6.4 2.6 7 7z"/><path d="M4 14.5h16"/><path d="M5 18h14c0 1.4-1.1 2.5-2.5 2.5h-9A2.5 2.5 0 0 1 5 18z"/></svg>Cardápio</button>
     <button type="button" data-aba="financeiro"><svg class="ico" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Financeiro</button>
     <button type="button" data-aba="ajustes"><svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Ajustes</button>
@@ -57,6 +58,16 @@
     <section class="aba" id="aba-pedidos">
       <div class="atalhos" id="atalhos"></div>
       <div class="quadro" id="quadro"></div>
+    </section>
+
+    <section class="aba" id="aba-concluidos" hidden>
+      <div class="cnc-barra">
+        <div class="seg" id="cncVista"><button type="button" data-v="pedidos" class="ativo">Pedidos concluídos</button><button type="button" data-v="clientes">Clientes</button></div>
+        <div class="seg" id="cncPer"><button type="button" data-p="hoje" class="ativo">Hoje</button><button type="button" data-p="7">7 dias</button></div>
+      </div>
+      <label class="busca-cnc"><svg class="ico" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></svg><input id="cncBusca" type="search" autocomplete="off" placeholder="Buscar"></label>
+      <div class="cnc-resumo" id="cncResumo"></div>
+      <div class="cnc-lista" id="cncLista"></div>
     </section>
 
     <section class="aba" id="aba-cardapio" hidden>
@@ -114,6 +125,7 @@
 <div class="alerta" id="alerta" role="alert"><span class="sino"><svg class="ico" viewBox="0 0 24 24"><path d="M6 9.5a6 6 0 0 1 12 0c0 5 2 6.5 2 6.5H4s2-1.5 2-6.5"/><path d="M10 19.5a2.2 2.2 0 0 0 4 0"/></svg></span><span><b id="alertaT">Novo pedido!</b><small id="alertaS"></small></span><button type="button" id="alertaVer">Ver</button></div>
 <div class="veu" id="veu" hidden></div>
 <div class="folha" id="folha" role="dialog" aria-modal="true" hidden></div>
+<div class="comanda" id="comanda" aria-hidden="true"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="db.js"></script>

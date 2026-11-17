@@ -9,7 +9,7 @@
   var loja = null, cardapio = { categorias: [], itens: [] }, pedidos = [], conhecidos = null, abaAtual = 'pedidos', periodo = 'hoje', catFiltro = '';
   var somOn = LS.getItem('ab_som') !== '0';
   var FOTOS = ['aego', 'salad', 'crispy', 'smash', 'triplo', 'duplo', 'melt', 'frango', 'combo1', 'combo2', 'batata', 'batatacb', 'onion', 'nuggets', 'refri', 'guarana', 'limonada', 'shake', 'brownie', 'petit'];
-  var TITULOS = { pedidos: 'Pedidos', cardapio: 'Cardápio', financeiro: 'Financeiro', ajustes: 'Ajustes' };
+  var TITULOS = { pedidos: 'Pedidos', concluidos: 'Concluídos', cardapio: 'Cardápio', financeiro: 'Financeiro', ajustes: 'Ajustes' };
 
   /* ---------- utilidades ---------- */
   var tT;
@@ -38,13 +38,17 @@
 
   /* ---------- folha ---------- */
   var folha = $('#folha'), veu = $('#veu');
-  function abrir(titulo, corpo, pe) {
+  function abrir(titulo, corpo, pe, manter) {
+    if (!manter && titulo.indexOf('Pedido #') !== 0) fichaAberta = null;
+    var jaAberta = folha.classList.contains('on');
     folha.innerHTML = '<div class="folha-cab"><h2>' + titulo + '</h2><button class="btn-ic" type="button" data-fechar aria-label="Fechar"><svg class="ico" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div><div class="folha-corpo">' + corpo + '</div>' + (pe ? '<div class="folha-pe">' + pe + '</div>' : '');
     folha.hidden = false; veu.hidden = false;
+    if (jaAberta) return;
     requestAnimationFrame(function () { requestAnimationFrame(function () { folha.classList.add('on'); veu.classList.add('on'); }); });
   }
-  function fechar() { folha.classList.remove('on'); veu.classList.remove('on'); setTimeout(function () { if (!folha.classList.contains('on')) { folha.hidden = true; veu.hidden = true; } }, 340); }
+  function fechar() { fichaAberta = null; folha.classList.remove('on'); veu.classList.remove('on'); setTimeout(function () { if (!folha.classList.contains('on')) { folha.hidden = true; veu.hidden = true; } }, 340); }
   veu.onclick = fechar;
+  d.addEventListener('keydown', function (e) { if (e.key === 'Escape' && folha.classList.contains('on')) fechar(); });
   folha.addEventListener('click', function (e) { if (e.target.closest('[data-fechar]')) fechar(); });
   function confirmar(titulo, texto, botao, cb) {
     abrir(titulo, '<p style="margin:0;color:var(--mut)">' + texto + '</p>', '<button class="btn" type="button" data-fechar>Voltar</button><button class="btn btn-amb" type="button" id="cfOk">' + botao + '</button>');
@@ -63,17 +67,19 @@
   });
   function entrarApp() {
     $('#login').hidden = true; $('#app').hidden = false;
-    Promise.all([DB.loja(), DB.cardapio(), DB.pedidos({ desde: hoje0() - 7 * 864e5 })]).then(function (r) {
+    Promise.all([DB.loja(), DB.cardapio(), DB.pedidos({ desde: hoje0() - 60 * 864e5 })]).then(function (r) {
       loja = r[0]; cardapio = r[1]; pedidos = r[2];
       conhecidos = {}; pedidos.forEach(function (p) { conhecidos[p.id] = 1; });
       pintarLoja(); pintarPedidos(); pintarSom();
       var a = (location.hash || '').replace('#', ''); if (TITULOS[a]) aba(a);
     });
     DB.ouvirPedidos(function () {
-      DB.pedidos({ desde: hoje0() - 7 * 864e5 }).then(function (lista) {
+      DB.pedidos({ desde: hoje0() - 60 * 864e5 }).then(function (lista) {
         var novos = lista.filter(function (p) { return !conhecidos[p.id]; });
         pedidos = lista; lista.forEach(function (p) { conhecidos[p.id] = 1; });
         pintarPedidos(novos.map(function (p) { return p.id; }));
+        if (abaAtual === 'concluidos') pintarConcluidos();
+        if (fichaAberta && acharPedido(fichaAberta)) abrirPedido(fichaAberta, true);
         if (abaAtual === 'financeiro') pintarFinanceiro();
         novos.filter(function (p) { return p.status === 'novo'; }).forEach(avisarNovo);
       });
@@ -103,81 +109,262 @@
     $$('#lado button').forEach(function (b) { b.classList.toggle('ativo', b.getAttribute('data-aba') === a); });
     $('#tituloAba').textContent = TITULOS[a];
     history.replaceState(null, '', '#' + a);
-    if (a === 'pedidos') pintarPedidos(); if (a === 'cardapio') pintarCardapio(); if (a === 'financeiro') pintarFinanceiro(); if (a === 'ajustes') pintarAjustes();
+    if (a === 'pedidos') pintarPedidos(); if (a === 'concluidos') pintarConcluidos(); if (a === 'cardapio') pintarCardapio(); if (a === 'financeiro') pintarFinanceiro(); if (a === 'ajustes') pintarAjustes();
     w.scrollTo(0, 0);
   }
   $$('#lado button').forEach(function (b) { b.onclick = function () { aba(b.getAttribute('data-aba')); }; });
 
-  /* ---------- pedidos ---------- */
+  /* ---------- pedidos (cozinha) ---------- */
   var COLS = [
     { id: 'novo', nome: 'Novos', st: ['novo'] },
     { id: 'preparo', nome: 'Em preparo', st: ['preparo'] },
-    { id: 'saiu', nome: 'A caminho / Pronto', st: ['saiu'] },
-    { id: 'fim', nome: 'Concluídos', st: ['concluido', 'cancelado'] }
+    { id: 'saiu', nome: 'Saiu / Pronto p/ retirada', curto: 'Saiu / Pronto', st: ['saiu'] }
   ];
-  var PROX = { novo: ['preparo', 'Aceitar e preparar'], preparo: ['saiu', null], saiu: ['concluido', null] };
+  var ATIVOS = ['novo', 'preparo', 'saiu'];
+  function digitos(t) { return String(t || '').replace(/\D/g, ''); }
+  function linkZap(tel, msg) { var n = digitos(tel); if (n.length <= 11) n = '55' + n; return 'https://wa.me/' + n + (msg ? '?text=' + encodeURIComponent(msg) : ''); }
+  function linkTel(tel) { return 'tel:+55' + digitos(tel); }
+  function primeiroNome(n) { return String(n || '').split(' ')[0]; }
+  function endLinha(e) { return e ? e.rua + ', ' + e.numero + (e.complemento ? ' — ' + e.complemento : '') : ''; }
+  function linkMapa(e) { return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(e.rua + ', ' + e.numero + ' - ' + e.bairro + ', ' + (loja.cidade || '')); }
+  function qtdItens(p) { return p.itens.reduce(function (s, x) { return s + x.qtd; }, 0); }
+  function resumoItens(p, max) {
+    var t = p.itens.slice(0, max).map(function (x) { return x.qtd + '× ' + x.nome; }).join(', ');
+    return t + (p.itens.length > max ? ' +' + (p.itens.length - max) : '');
+  }
+  function dataCurta(t) {
+    var h0 = hoje0();
+    if (t >= h0) return 'hoje, ' + U.hora(t);
+    if (t >= h0 - 864e5) return 'ontem, ' + U.hora(t);
+    var x = new Date(t); return (x.getDate() < 10 ? '0' : '') + x.getDate() + '/' + (x.getMonth() < 9 ? '0' : '') + (x.getMonth() + 1) + ', ' + U.hora(t);
+  }
+  function msgCliente(p) {
+    var n = primeiroNome(p.cliente.nome), loj = loja.nome || 'AEGO Burguer';
+    var m = {
+      novo: 'Olá, ' + n + '! Recebemos seu pedido #' + p.numero + ' na ' + loj + '. Já vamos começar a preparar.',
+      preparo: 'Olá, ' + n + '! Seu pedido #' + p.numero + ' já está em preparo na ' + loj + '. 🍔',
+      saiu: p.tipo === 'entrega' ? 'Olá, ' + n + '! Seu pedido #' + p.numero + ' saiu para entrega e chega em instantes. 🛵' : 'Olá, ' + n + '! Seu pedido #' + p.numero + ' está pronto para retirada no balcão. 🍔',
+      concluido: 'Olá, ' + n + '! Obrigado por pedir na ' + loj + '. Esperamos que tenha curtido! Volte sempre. 🧡',
+      cancelado: 'Olá, ' + n + '. Sobre o seu pedido #' + p.numero + ' na ' + loj + ': '
+    };
+    return m[p.status] || '';
+  }
+  function rotuloAvancar(p) {
+    if (p.status === 'novo') return 'Aceitar';
+    if (p.status === 'preparo') return p.tipo === 'entrega' ? 'Saiu p/ entrega' : 'Pronto p/ retirada';
+    if (p.status === 'saiu') return p.tipo === 'entrega' ? 'Entregue' : 'Retirado';
+    return '';
+  }
+  var PROX = { novo: 'preparo', preparo: 'saiu', saiu: 'concluido' };
+  var ICO_ZAP = '<svg class="ico" viewBox="0 0 24 24"><path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z"/><path d="M9.2 8.6c.3 2.8 3.4 5.9 6.2 6.2l1.2-1.4-2-1-1 .9c-1.2-.5-2.2-1.5-2.7-2.7l.9-1-1-2z"/></svg>';
+  var ICO_TEL = '<svg class="ico" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>';
+  var ICO_PIN = '<svg class="ico" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>';
+  var ICO_PRINT = '<svg class="ico" viewBox="0 0 24 24"><path d="M7 9V3h10v6M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><path d="M7 14h10v7H7z"/></svg>';
+
   function cartaoPedido(p, chegou) {
-    var fim = p.status === 'concluido' || p.status === 'cancelado';
-    var min = (Date.now() - p.criadoEm) / 60000, atraso = !fim && ((p.status === 'novo' && min > 5) || min > 40);
-    var h = '<article class="ped' + (chegou ? ' chegou' : '') + (fim ? ' mini' : '') + '" data-id="' + p.id + '">' +
-      '<div class="ped-cab"><span class="ped-num">#' + p.numero + '</span><span class="etq ' + (p.status === 'cancelado' ? 'cancelado' : p.tipo) + '">' + (p.status === 'cancelado' ? 'Cancelado' : p.tipo === 'entrega' ? 'Entrega' : 'Retirada') + '</span>' +
-      '<span class="ped-tempo' + (atraso ? ' atraso' : '') + '" data-t="' + p.criadoEm + '">' + (fim ? U.hora(p.criadoEm) : U.tempoDesde(p.criadoEm)) + '</span></div>' +
-      '<div class="ped-cli">' + esc(p.cliente.nome) + (fim ? '' : ' <a href="https://wa.me/55' + esc(String(p.cliente.telefone).replace(/\D/g, '')) + '" target="_blank" rel="noopener">' + esc(p.cliente.telefone) + '</a>') + '</div>';
-    if (fim) return h + '<div class="ped-tot"><b>' + brl(p.total) + '</b><span>' + p.itens.reduce(function (s, x) { return s + x.qtd; }, 0) + ' itens · ' + esc(U.pagamento(p.pagamento).split(' · ')[0]) + '</span></div></article>';
-    if (p.tipo === 'entrega' && p.endereco) h += '<div class="ped-end">' + esc(p.endereco.rua + ', ' + p.endereco.numero + (p.endereco.complemento ? ' — ' + p.endereco.complemento : '') + ' · ' + p.endereco.bairro) + '</div>';
-    h += '<ul class="ped-itens">' + p.itens.map(function (x) { var dt = U.detalheItem(x); return '<li><b>' + x.qtd + '×</b>' + esc(x.nome) + (dt ? '<small>' + esc(dt) + '</small>' : '') + '</li>'; }).join('') + '</ul>';
-    if (p.obs) h += '<div class="ped-obs">Obs.: ' + esc(p.obs) + '</div>';
-    h += '<div class="ped-tot"><b>' + brl(p.total) + '</b><span>' + esc(U.pagamento(p.pagamento)) + (p.taxa ? '<br>inclui entrega ' + brl(p.taxa) : '') + '</span></div>';
-    var px = PROX[p.status], rot = px[1] || (px[0] === 'saiu' ? (p.tipo === 'entrega' ? 'Saiu para entrega' : 'Pronto p/ retirada') : (p.tipo === 'entrega' ? 'Entregue' : 'Retirado'));
-    h += '<div class="ped-acoes">' + (p.status === 'novo' ? '<button class="btn btn-p btn-perigo" type="button" data-cancelar="' + p.id + '">Recusar</button>' : '<button class="btn btn-p" type="button" data-cancelar="' + p.id + '">Cancelar</button>') +
-      '<button class="btn btn-p btn-amb" type="button" data-avancar="' + p.id + '" data-para="' + px[0] + '">' + rot + ' →</button></div>';
+    var min = (Date.now() - p.criadoEm) / 60000, atraso = (p.status === 'novo' && min > 5) || min > 40;
+    var h = '<article class="ped' + (chegou ? ' chegou' : '') + '" data-abrir="' + p.id + '" tabindex="0" role="button" aria-label="Abrir pedido ' + p.numero + '">' +
+      '<div class="ped-cab"><span class="ped-num">#' + p.numero + '</span><span class="etq ' + p.tipo + '">' + (p.tipo === 'entrega' ? 'Entrega' : 'Retirada') + '</span>' +
+      '<span class="ped-tempo' + (atraso ? ' atraso' : '') + '" data-t="' + p.criadoEm + '">' + U.tempoDesde(p.criadoEm) + '</span></div>' +
+      '<div class="ped-cli">' + esc(p.cliente.nome) + '</div>' +
+      '<div class="ped-res"><b>' + qtdItens(p) + ' ' + (qtdItens(p) === 1 ? 'item' : 'itens') + '</b> · ' + esc(resumoItens(p, 2)) + '</div>' +
+      (p.obs ? '<div class="ped-flag">⚠ Tem observação</div>' : '') +
+      '<div class="ped-rod"><span class="ped-val">' + brl(p.total) + '</span><span class="ped-meta">' + esc(U.pagamento(p.pagamento).split(' · ')[0]) + (p.tipo === 'entrega' && p.endereco ? ' · ' + esc(p.endereco.bairro) : '') + '</span></div>' +
+      '<div class="ped-acoes">' + (p.status === 'novo' ? '<button class="btn btn-p" type="button" data-cancelar="' + p.id + '">Recusar</button>' : '<button class="btn btn-p" type="button" data-ver="' + p.id + '">Detalhes</button>') +
+      '<button class="btn btn-p btn-amb" type="button" data-avancar="' + p.id + '">' + rotuloAvancar(p) + ' →</button></div>';
     return h + '</article>';
   }
   function pintarPedidos(chegaram) {
     chegaram = chegaram || [];
-    var h0 = hoje0(), doDia = pedidos.filter(function (p) { return p.criadoEm >= h0 || ['novo', 'preparo', 'saiu'].indexOf(p.status) >= 0; });
+    var ativos = pedidos.filter(function (p) { return ATIVOS.indexOf(p.status) >= 0; });
     var cont = {};
     $('#quadro').innerHTML = COLS.map(function (c) {
-      var ps = doDia.filter(function (p) { return c.st.indexOf(p.status) >= 0; });
-      ps.sort(function (a, b) { return c.id === 'fim' ? b.criadoEm - a.criadoEm : a.criadoEm - b.criadoEm; });
+      var ps = ativos.filter(function (p) { return c.st.indexOf(p.status) >= 0; }).sort(function (a, b) { return a.criadoEm - b.criadoEm; });
       cont[c.id] = ps.length;
       return '<section class="coluna col-' + c.id + '" id="col-' + c.id + '"><div class="col-cab"><i></i><h2>' + c.nome + '</h2><span class="n">' + ps.length + '</span></div>' +
         (ps.length ? ps.map(function (p) { return cartaoPedido(p, chegaram.indexOf(p.id) >= 0); }).join('') : '<div class="col-vazia">' + (c.id === 'novo' ? 'Nenhum pedido esperando. Os novos aparecem aqui na hora.' : 'Nada por aqui.') + '</div>') + '</section>';
     }).join('');
-    $('#atalhos').innerHTML = COLS.map(function (c) { return '<button type="button" class="atalho c-' + c.id + '" data-col="' + c.id + '">' + c.nome + ' <b>' + cont[c.id] + '</b></button>'; }).join('');
+    var h0 = hoje0(), fimHoje = pedidos.filter(function (p) { return p.status === 'concluido' && p.criadoEm >= h0; }).length;
+    $('#atalhos').innerHTML = COLS.map(function (c) { return '<button type="button" class="atalho c-' + c.id + '" data-col="' + c.id + '">' + (c.curto || c.nome) + ' <b>' + cont[c.id] + '</b></button>'; }).join('') +
+      '<button type="button" class="atalho c-fim" data-ir="concluidos">Concluídos hoje <b>' + fimHoje + '</b></button>';
     var n = cont.novo; $('#contNovos').hidden = !n; $('#contNovos').textContent = n;
     d.title = (n ? '(' + n + ') ' : '') + 'Painel · AEGO Burguer';
   }
-  function atualizarTempos() { $$('.ped-tempo').forEach(function (el) { if (!el.closest('.mini')) el.textContent = U.tempoDesde(+el.getAttribute('data-t')); }); }
-  $('#quadro').addEventListener('click', function (e) {
-    var av = e.target.closest('[data-avancar]'), ca = e.target.closest('[data-cancelar]');
-    if (av) {
-      av.disabled = true;
-      DB.mudarStatus(av.getAttribute('data-avancar'), av.getAttribute('data-para')).then(function (p) {
-        pedidos = pedidos.map(function (x) { return x.id === p.id ? p : x; }); pintarPedidos();
-        toast('#' + p.numero + ' → ' + U.rotuloStatus(p.status, p.tipo));
-      });
-    } else if (ca) {
-      var id = ca.getAttribute('data-cancelar');
-      confirmar('Cancelar pedido #' + id + '?', 'O cliente vê o cancelamento na tela de acompanhamento. Avise pelo WhatsApp se precisar.', 'Cancelar pedido', function () {
-        DB.mudarStatus(id, 'cancelado').then(function (p) { pedidos = pedidos.map(function (x) { return x.id === p.id ? p : x; }); pintarPedidos(); toast('#' + p.numero + ' cancelado'); });
-      });
-    }
-  });
+  function atualizarTempos() { $$('#quadro .ped-tempo').forEach(function (el) { el.textContent = U.tempoDesde(+el.getAttribute('data-t')); }); }
+  function acharPedido(id) { return pedidos.filter(function (x) { return x.id === String(id); })[0]; }
+  function trocarPedido(p) { pedidos = pedidos.map(function (x) { return x.id === p.id ? p : x; }); }
+  function repintar() { pintarPedidos(); if (abaAtual === 'concluidos') pintarConcluidos(); }
+  function avancar(id, btn) {
+    var p = acharPedido(id); if (!p || !PROX[p.status]) return;
+    if (btn) btn.disabled = true;
+    DB.mudarStatus(id, PROX[p.status]).then(function (np) {
+      trocarPedido(np); repintar();
+      if (fichaAberta === np.id) abrirPedido(np.id, true);
+      toast('#' + np.numero + ' → ' + U.rotuloStatus(np.status, np.tipo) + (np.status === 'concluido' ? ' · foi para Concluídos' : ''));
+    });
+  }
+  function cancelar(id) {
+    var p = acharPedido(id); if (!p) return;
+    confirmar((p.status === 'novo' ? 'Recusar' : 'Cancelar') + ' pedido #' + p.numero + '?', 'O cliente vê o cancelamento na tela de acompanhamento. Avise pelo WhatsApp se precisar.', p.status === 'novo' ? 'Recusar pedido' : 'Cancelar pedido', function () {
+      DB.mudarStatus(id, 'cancelado').then(function (np) { trocarPedido(np); repintar(); toast('#' + np.numero + ' cancelado'); });
+    });
+  }
+  function cliqueLista(e) {
+    var av = e.target.closest('[data-avancar]'), ca = e.target.closest('[data-cancelar]'), ab = e.target.closest('[data-abrir],[data-ver]');
+    if (av) { e.stopPropagation(); avancar(av.getAttribute('data-avancar'), av); }
+    else if (ca) { e.stopPropagation(); cancelar(ca.getAttribute('data-cancelar')); }
+    else if (ab) abrirPedido(ab.getAttribute('data-abrir') || ab.getAttribute('data-ver'));
+  }
+  $('#quadro').addEventListener('click', cliqueLista);
+  $('#quadro').addEventListener('keydown', function (e) { if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('[data-abrir]')) { e.preventDefault(); abrirPedido(e.target.getAttribute('data-abrir')); } });
   $('#atalhos').addEventListener('click', function (e) {
+    var ir = e.target.closest('[data-ir]'); if (ir) { aba(ir.getAttribute('data-ir')); return; }
     var b = e.target.closest('[data-col]'); if (!b) return;
     var col = $('#col-' + b.getAttribute('data-col')), q = $('#quadro');
     if (q.scrollWidth > q.clientWidth) q.scrollTo({ left: col.offsetLeft - q.offsetLeft - 14, behavior: 'smooth' }); else col.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
+
+  /* ---------- ficha do pedido ---------- */
+  var fichaAberta = null;
+  function linhaTempo(p) {
+    var passos = [['novo', 'Recebido'], ['preparo', 'Em preparo'], ['saiu', p.tipo === 'entrega' ? 'Saiu p/ entrega' : 'Pronto p/ retirada'], ['concluido', p.tipo === 'entrega' ? 'Entregue' : 'Retirado']];
+    var em = {}; (p.historico || []).forEach(function (h) { em[h.status] = h.em; });
+    if (p.status === 'cancelado') return '<div class="tl-cancel">Pedido cancelado' + (em.cancelado ? ' às ' + U.hora(em.cancelado) : '') + '</div>';
+    var idx = ['novo', 'preparo', 'saiu', 'concluido'].indexOf(p.status);
+    return '<ol class="tl">' + passos.map(function (s, k) { return '<li class="' + (k < idx ? 'feito' : k === idx ? 'atual' : '') + '"><i></i><span>' + s[1] + '</span><small>' + (em[s[0]] ? U.hora(em[s[0]]) : '—') + '</small></li>'; }).join('') + '</ol>';
+  }
+  function blocoPagamento(p) {
+    var pg = p.pagamento || {}, h = '<div class="fx-li"><span>Forma</span><b>' + esc({ pix: 'Pix', cartao: 'Cartão na entrega', dinheiro: 'Dinheiro' }[pg.forma] || pg.forma) + '</b></div>';
+    if (pg.forma === 'dinheiro') h += pg.trocoPara ? '<div class="fx-li"><span>Troco para</span><b>' + brl(pg.trocoPara) + '</b></div><div class="fx-li destaque"><span>Levar de troco</span><b>' + brl(pg.trocoPara - p.total) + '</b></div>' : '<div class="fx-li"><span>Troco</span><b>Não precisa</b></div>';
+    return h;
+  }
+  function abrirPedido(id, manter) {
+    var p = acharPedido(id); if (!p) return;
+    fichaAberta = p.id;
+    var ativo = ATIVOS.indexOf(p.status) >= 0, rotSt = U.rotuloStatus(p.status, p.tipo);
+    var c = '<div class="fx-topo"><span class="etq ' + p.tipo + '">' + (p.tipo === 'entrega' ? 'Entrega' : 'Retirada') + '</span><span class="fx-st st-' + p.status + '">' + esc(rotSt) + '</span><span class="fx-hora">' + dataCurta(p.criadoEm) + '</span></div>' +
+      linhaTempo(p) +
+      '<section class="fx-sec"><h3>Cliente</h3><div class="fx-cli"><span class="av">' + esc(iniciais(p.cliente.nome)) + '</span><div><b>' + esc(p.cliente.nome) + '</b><small>' + esc(p.cliente.telefone) + '</small></div>' +
+      '<button class="btn btn-p" type="button" data-cliente="' + esc(chaveCliente(p)) + '">Ver cliente</button></div>' +
+      '<div class="fx-bts"><a class="btn btn-zap" href="' + linkZap(p.cliente.telefone, msgCliente(p)) + '" target="_blank" rel="noopener">' + ICO_ZAP + 'WhatsApp</a><a class="btn" href="' + linkTel(p.cliente.telefone) + '">' + ICO_TEL + 'Ligar</a></div></section>' +
+      '<section class="fx-sec"><h3>' + (p.tipo === 'entrega' ? 'Endereço de entrega' : 'Retirada') + '</h3>' +
+      (p.tipo === 'entrega' && p.endereco ? '<p class="fx-end"><b>' + esc(endLinha(p.endereco)) + '</b><br>' + esc(p.endereco.bairro) + (loja.cidade ? ' · ' + esc(loja.cidade) : '') + (p.taxa ? '<br><small>Taxa de entrega ' + brl(p.taxa) + '</small>' : '') + '</p><a class="btn btn-p" href="' + linkMapa(p.endereco) + '" target="_blank" rel="noopener">' + ICO_PIN + 'Abrir no mapa</a>'
+        : '<p class="fx-end">O cliente busca no balcão' + (loja.tempoRetirada ? ' · ' + esc(loja.tempoRetirada) : '') + '.</p>') + '</section>' +
+      '<section class="fx-sec"><h3>O que preparar <small>' + qtdItens(p) + ' ' + (qtdItens(p) === 1 ? 'item' : 'itens') + '</small></h3><ul class="fx-itens">' +
+      p.itens.map(function (x) {
+        var sub = [];
+        if (x.ponto) sub.push('<span class="tag">' + esc(x.ponto) + '</span>');
+        (x.extras || []).forEach(function (e) { sub.push('<span class="tag mais">+ ' + esc(e.nome) + '</span>'); });
+        (x.retirar || []).forEach(function (r) { sub.push('<span class="tag menos">sem ' + esc(String(r).toLowerCase()) + '</span>'); });
+        return '<li><span class="q">' + x.qtd + '×</span><div><b>' + esc(x.nome) + '</b>' + (sub.length ? '<div class="tags">' + sub.join('') + '</div>' : '') + (x.obs ? '<em>“' + esc(x.obs) + '”</em>' : '') + '</div><span class="v">' + brl(x.total) + '</span></li>';
+      }).join('') + '</ul>' + (p.obs ? '<div class="fx-obs"><b>Observação do pedido</b>' + esc(p.obs) + '</div>' : '') + '</section>' +
+      '<section class="fx-sec"><h3>Pagamento</h3>' + blocoPagamento(p) +
+      '<div class="fx-li"><span>Subtotal</span><b>' + brl(p.subtotal != null ? p.subtotal : p.total - (p.taxa || 0)) + '</b></div>' + (p.tipo === 'entrega' ? '<div class="fx-li"><span>Entrega</span><b>' + (p.taxa ? brl(p.taxa) : 'Grátis') + '</b></div>' : '') +
+      '<div class="fx-li fx-tot"><span>Total</span><b>' + brl(p.total) + '</b></div></section>';
+    var pe = '<button class="btn" type="button" id="fxImp" aria-label="Imprimir comanda">' + ICO_PRINT + '<span class="so-largo">Comanda</span></button>' +
+      (ativo ? '<button class="btn" type="button" id="fxCanc">' + (p.status === 'novo' ? 'Recusar' : 'Cancelar') + '</button><button class="btn btn-amb" type="button" id="fxAv">' + rotuloAvancar(p) + ' →</button>'
+        : '<a class="btn btn-amb" href="' + linkZap(p.cliente.telefone, msgCliente(p)) + '" target="_blank" rel="noopener">' + ICO_ZAP + 'Falar com o cliente</a>');
+    abrir('Pedido #' + p.numero, c, pe, manter);
+    $('#fxImp').onclick = function () { imprimir(p); };
+    if (ativo) { $('#fxAv').onclick = function () { avancar(p.id, this); }; $('#fxCanc').onclick = function () { cancelar(p.id); }; }
+  }
+  function imprimir(p) {
+    var c = $('#comanda');
+    c.innerHTML = '<h1>' + esc(loja.nome || 'AEGO Burguer') + '</h1><p>Pedido <b>#' + p.numero + '</b> · ' + dataCurta(p.criadoEm) + '</p><p><b>' + (p.tipo === 'entrega' ? 'ENTREGA' : 'RETIRADA') + '</b></p><hr>' +
+      '<p>' + esc(p.cliente.nome) + '<br>' + esc(p.cliente.telefone) + (p.endereco ? '<br>' + esc(endLinha(p.endereco)) + '<br>' + esc(p.endereco.bairro) : '') + '</p><hr>' +
+      p.itens.map(function (x) { var dt = U.detalheItem(x); return '<p><b>' + x.qtd + 'x ' + esc(x.nome) + '</b>' + (dt ? '<br>  ' + esc(dt) : '') + '<span style="float:right">' + brl(x.total) + '</span></p>'; }).join('') +
+      (p.obs ? '<hr><p><b>OBS:</b> ' + esc(p.obs) + '</p>' : '') + '<hr><p>Subtotal <span style="float:right">' + brl(p.subtotal || p.total - (p.taxa || 0)) + '</span><br>Entrega <span style="float:right">' + brl(p.taxa || 0) + '</span><br><b>TOTAL <span style="float:right">' + brl(p.total) + '</span></b></p>' +
+      '<p>' + esc(U.pagamento(p.pagamento)) + '</p>';
+    try { w.print(); } catch (e) {}
+  }
+
+  /* ---------- concluídos + clientes ---------- */
+  var cncVista = 'pedidos', cncPer = 'hoje', cncBusca = '';
+  function iniciais(n) { var p = String(n || '?').trim().split(/\s+/); return ((p[0] || '')[0] + ((p[1] || '')[0] || '')).toUpperCase(); }
+  function chaveCliente(p) { return digitos(p.cliente.telefone) || String(p.cliente.nome).toLowerCase(); }
+  function clientes() {
+    var m = {};
+    pedidos.forEach(function (p) {
+      var k = chaveCliente(p), c = m[k] || (m[k] = { chave: k, nome: p.cliente.nome, telefone: p.cliente.telefone, pedidos: [], gasto: 0, ultimo: 0, primeiro: Infinity, ends: {}, itens: {} });
+      c.pedidos.push(p);
+      if (p.criadoEm > c.ultimo) { c.ultimo = p.criadoEm; c.nome = p.cliente.nome; }
+      c.primeiro = Math.min(c.primeiro, p.criadoEm);
+      if (p.status !== 'cancelado') { c.gasto += p.total; p.itens.forEach(function (x) { c.itens[x.nome] = (c.itens[x.nome] || 0) + x.qtd; }); }
+      if (p.endereco) { var e = endLinha(p.endereco) + ' · ' + p.endereco.bairro; c.ends[e] = p.endereco; }
+    });
+    return Object.keys(m).map(function (k) { var c = m[k]; c.validos = c.pedidos.filter(function (p) { return p.status !== 'cancelado'; }).length; return c; });
+  }
+  function bate(txt) { if (!cncBusca) return true; var b = cncBusca.toLowerCase(), bd = digitos(cncBusca); return txt.toLowerCase().indexOf(b) >= 0 || (bd && digitos(txt).indexOf(bd) >= 0); }
+  function pintarConcluidos() {
+    $$('#cncVista button').forEach(function (b) { b.classList.toggle('ativo', b.getAttribute('data-v') === cncVista); });
+    $$('#cncPer button').forEach(function (b) { b.classList.toggle('ativo', b.getAttribute('data-p') === cncPer); });
+    $('#cncPer').hidden = cncVista !== 'pedidos';
+    $('#cncBusca').placeholder = cncVista === 'pedidos' ? 'Buscar por nome, telefone ou nº do pedido' : 'Buscar cliente por nome ou telefone';
+    var alvo = $('#cncLista');
+    if (cncVista === 'pedidos') {
+      var desde = cncPer === 'hoje' ? hoje0() : hoje0() - 6 * 864e5;
+      var ps = pedidos.filter(function (p) { return (p.status === 'concluido' || p.status === 'cancelado') && p.criadoEm >= desde && bate(p.cliente.nome + ' ' + p.cliente.telefone + ' #' + p.numero + ' ' + p.numero); })
+        .sort(function (a, b) { return b.criadoEm - a.criadoEm; });
+      var ok = ps.filter(function (p) { return p.status === 'concluido'; }), fat = ok.reduce(function (s, p) { return s + p.total; }, 0);
+      $('#cncResumo').innerHTML = '<div><b>' + ok.length + '</b><small>concluído' + (ok.length === 1 ? '' : 's') + '</small></div><div><b>' + brl(fat) + '</b><small>faturado</small></div><div><b>' + (ps.length - ok.length) + '</b><small>cancelado' + (ps.length - ok.length === 1 ? '' : 's') + '</small></div>';
+      alvo.innerHTML = ps.map(function (p) {
+        return '<button type="button" class="lin-ped" data-abrir="' + p.id + '"><span class="num">#' + p.numero + '</span><span class="t"><b>' + esc(p.cliente.nome) + '</b><small>' + dataCurta(p.criadoEm) + ' · ' + qtdItens(p) + ' ' + (qtdItens(p) === 1 ? 'item' : 'itens') + ' · ' + (p.tipo === 'entrega' ? 'Entrega' : 'Retirada') + '</small></span>' +
+          '<span class="d"><b>' + brl(p.total) + '</b><span class="fx-st st-' + p.status + '">' + esc(U.rotuloStatus(p.status, p.tipo)) + '</span></span></button>';
+      }).join('') || '<p class="col-vazia">' + (cncBusca ? 'Nada encontrado.' : 'Nenhum pedido concluído ' + (cncPer === 'hoje' ? 'hoje' : 'nos últimos 7 dias') + ' ainda.') + '</p>';
+    } else {
+      var cs = clientes().filter(function (c) { return bate(c.nome + ' ' + c.telefone); }).sort(function (a, b) { return b.ultimo - a.ultimo; });
+      var rec = cs.filter(function (c) { return c.validos > 1; }).length;
+      $('#cncResumo').innerHTML = '<div><b>' + cs.length + '</b><small>clientes</small></div><div><b>' + rec + '</b><small>voltaram a pedir</small></div><div><b>' + brl(cs.length ? Math.round(cs.reduce(function (s, c) { return s + c.gasto; }, 0) / cs.length) : 0) + '</b><small>gasto médio</small></div>';
+      alvo.innerHTML = cs.map(function (c) {
+        return '<button type="button" class="lin-cli" data-cliente="' + esc(c.chave) + '"><span class="av">' + esc(iniciais(c.nome)) + '</span><span class="t"><b>' + esc(c.nome) + (c.validos >= 5 ? ' <span class="selo">Fiel</span>' : '') + '</b><small>' + esc(c.telefone) + ' · último ' + dataCurta(c.ultimo) + '</small></span>' +
+          '<span class="d"><b>' + brl(c.gasto) + '</b><small>' + c.pedidos.length + ' pedido' + (c.pedidos.length === 1 ? '' : 's') + '</small></span></button>';
+      }).join('') || '<p class="col-vazia">' + (cncBusca ? 'Nenhum cliente encontrado.' : 'Os clientes aparecem aqui a partir do primeiro pedido.') + '</p>';
+    }
+  }
+  function abrirCliente(chave) {
+    var c = clientes().filter(function (x) { return x.chave === chave; })[0]; if (!c) return;
+    fichaAberta = null;
+    var ps = c.pedidos.slice().sort(function (a, b) { return b.criadoEm - a.criadoEm; });
+    var fav = Object.keys(c.itens).sort(function (a, b) { return c.itens[b] - c.itens[a]; })[0];
+    var ends = Object.keys(c.ends);
+    var corpo = '<div class="cli-cab"><span class="av av-g">' + esc(iniciais(c.nome)) + '</span><div><b>' + esc(c.nome) + '</b><small>' + esc(c.telefone) + '</small>' + (c.validos >= 5 ? '<span class="selo">Cliente fiel</span>' : c.validos <= 1 ? '<span class="selo novo">Cliente novo</span>' : '') + '</div></div>' +
+      '<div class="fx-bts"><a class="btn btn-zap" href="' + linkZap(c.telefone, 'Olá, ' + primeiroNome(c.nome) + '! Aqui é da ' + (loja.nome || 'AEGO Burguer') + '. ') + '" target="_blank" rel="noopener">' + ICO_ZAP + 'WhatsApp</a><a class="btn" href="' + linkTel(c.telefone) + '">' + ICO_TEL + 'Ligar</a></div>' +
+      '<div class="cli-kpis"><div><b>' + c.validos + '</b><small>pedidos</small></div><div><b>' + brl(c.gasto) + '</b><small>total gasto</small></div><div><b>' + brl(c.validos ? Math.round(c.gasto / c.validos) : 0) + '</b><small>ticket médio</small></div></div>' +
+      '<section class="fx-sec"><h3>Informações</h3>' +
+      '<div class="fx-li"><span>Nome</span><b>' + esc(c.nome) + '</b></div>' +
+      '<div class="fx-li"><span>Telefone / WhatsApp</span><b>' + esc(c.telefone) + '</b></div>' +
+      '<div class="fx-li"><span>Cliente desde</span><b>' + dataCurta(c.primeiro) + '</b></div>' +
+      '<div class="fx-li"><span>Último pedido</span><b>#' + ps[0].numero + ' · ' + dataCurta(c.ultimo) + '</b></div>' +
+      (fav ? '<div class="fx-li"><span>Mais pede</span><b>' + esc(fav) + ' (' + c.itens[fav] + '×)</b></div>' : '') + '</section>' +
+      '<section class="fx-sec"><h3>Endereço' + (ends.length > 1 ? 's' : '') + '</h3>' +
+      (ends.length ? ends.map(function (e) { var en = c.ends[e]; return '<div class="cli-end">' + ICO_PIN + '<span>' + esc(endLinha(en)) + '<small>' + esc(en.bairro) + (loja.cidade ? ' · ' + esc(loja.cidade) : '') + '</small></span><a class="btn btn-p" href="' + linkMapa(en) + '" target="_blank" rel="noopener">Mapa</a></div>'; }).join('') : '<p class="fx-end">Só fez pedidos para retirada.</p>') + '</section>' +
+      '<section class="fx-sec"><h3>Pedidos <small>' + ps.length + '</small></h3><div class="cli-peds">' +
+      ps.map(function (p) { return '<button type="button" class="lin-ped" data-abrir="' + p.id + '"><span class="num">#' + p.numero + '</span><span class="t"><b>' + esc(resumoItens(p, 2)) + '</b><small>' + dataCurta(p.criadoEm) + ' · ' + (p.tipo === 'entrega' ? 'Entrega' : 'Retirada') + '</small></span><span class="d"><b>' + brl(p.total) + '</b><span class="fx-st st-' + p.status + '">' + esc(U.rotuloStatus(p.status, p.tipo)) + '</span></span></button>'; }).join('') + '</div></section>';
+    abrir(esc(c.nome), corpo, null);
+  }
+  folha.addEventListener('click', function (e) {
+    var cl = e.target.closest('[data-cliente]'), pd = e.target.closest('.lin-ped[data-abrir]');
+    if (cl) abrirCliente(cl.getAttribute('data-cliente'));
+    else if (pd) abrirPedido(pd.getAttribute('data-abrir'), true);
+  });
+  $('#cncLista').addEventListener('click', function (e) {
+    var cl = e.target.closest('[data-cliente]'), pd = e.target.closest('[data-abrir]');
+    if (cl) abrirCliente(cl.getAttribute('data-cliente')); else if (pd) abrirPedido(pd.getAttribute('data-abrir'));
+  });
+  $('#cncVista').addEventListener('click', function (e) { var b = e.target.closest('[data-v]'); if (b) { cncVista = b.getAttribute('data-v'); pintarConcluidos(); } });
+  $('#cncPer').addEventListener('click', function (e) { var b = e.target.closest('[data-p]'); if (b) { cncPer = b.getAttribute('data-p'); pintarConcluidos(); } });
+  $('#cncBusca').addEventListener('input', function (e) { cncBusca = e.target.value.trim(); pintarConcluidos(); });
+
   var tAlerta;
+  var ultimoNovo = null;
   function avisarNovo(p) {
-    tocar();
+    ultimoNovo = p.id; tocar();
     $('#alertaT').textContent = 'Novo pedido #' + p.numero;
     $('#alertaS').textContent = p.cliente.nome + ' · ' + brl(p.total) + ' · ' + (p.tipo === 'entrega' ? 'Entrega' : 'Retirada');
     var a = $('#alerta'); a.classList.remove('on'); void a.offsetWidth; a.classList.add('on');
     clearTimeout(tAlerta); tAlerta = setTimeout(function () { a.classList.remove('on'); }, 7000);
   }
-  $('#alertaVer').onclick = function () { $('#alerta').classList.remove('on'); aba('pedidos'); var c = $('#col-novo'); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' }); };
+  $('#alertaVer').onclick = function () { $('#alerta').classList.remove('on'); aba('pedidos'); var c = $('#col-novo'); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'start' }); if (ultimoNovo && acharPedido(ultimoNovo)) abrirPedido(ultimoNovo); };
 
   /* ---------- cardápio ---------- */
   function nomeCat(id) { var c = cardapio.categorias.filter(function (x) { return x.id === id; })[0]; return c ? c.nome : '—'; }
