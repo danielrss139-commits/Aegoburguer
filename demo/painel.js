@@ -391,10 +391,31 @@
   });
   $('#listaItens').addEventListener('click', function (e) { var t = e.target.closest('[data-ed]'); if (t) editarItem(t.getAttribute('data-ed')); });
   $('#novoItem').onclick = function () { editarItem(null); };
+  // foto da galeria: recorta quadrado e reduz para 640px (fica leve para salvar)
+  function fotoGaleria(arq) {
+    return new Promise(function (ok, erro) {
+      var url = URL.createObjectURL(arq), im = new Image();
+      im.onload = function () {
+        var lado = Math.min(im.naturalWidth, im.naturalHeight), t = Math.min(640, lado), c = d.createElement('canvas');
+        c.width = c.height = t;
+        c.getContext('2d').drawImage(im, (im.naturalWidth - lado) / 2, (im.naturalHeight - lado) / 2, lado, lado, 0, 0, t, t);
+        URL.revokeObjectURL(url);
+        var out = c.toDataURL('image/webp', .8); if (out.indexOf('data:image/webp') !== 0) out = c.toDataURL('image/jpeg', .82);
+        ok(out);
+      };
+      im.onerror = function () { URL.revokeObjectURL(url); erro(); };
+      im.src = url;
+    });
+  }
   function editarItem(id) {
     var i = id ? JSON.parse(JSON.stringify(cardapio.itens.filter(function (x) { return x.id === id; })[0])) :
       { id: '', cat: catFiltro || (cardapio.categorias[0] || {}).id, nome: '', desc: '', preco: 0, precoAntigo: 0, foto: 'img/aego.webp', disponivel: true, destaque: false, extras: 'burger', retirar: [] };
     var corpo = '<form id="fItem">' +
+      '<div class="campo"><span>Foto</span>' +
+        '<label class="btn btn-p galeria-b"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><circle cx="8.5" cy="10" r="1.8"/><path d="M21 16l-5-5-8.5 8.5"/></svg>Escolher da galeria<input type="file" accept="image/*" id="fotoArq" hidden></label>' +
+        '<small class="dica">Ou escolha uma das fotos prontas:</small>' +
+        '<div class="fotos-esc" id="fotosEsc">' + (/^data:/.test(i.foto) ? '<label class="propria"><input type="radio" name="foto" value="' + i.foto + '" checked><img src="' + i.foto + '" alt="Sua foto" width="90" height="90"></label>' : '') +
+        FOTOS.map(function (f) { var src = 'img/' + f + '.webp'; return '<label><input type="radio" name="foto" value="' + src + '"' + (src === i.foto ? ' checked' : '') + '><img src="' + src + '" alt="' + f + '" loading="lazy" width="90" height="90"></label>'; }).join('') + '</div></div>' +
       '<label class="campo"><span>Nome</span><input name="nome" required value="' + esc(i.nome) + '"></label>' +
       '<label class="campo"><span>Descrição</span><textarea name="desc" rows="3">' + esc(i.desc) + '</textarea></label>' +
       '<div class="grade2"><label class="campo"><span>Preço (R$)</span><input name="preco" type="number" step="0.10" min="0" value="' + (i.preco || '') + '"></label><label class="campo"><span>Preço “de” (promoção)</span><input name="precoAntigo" type="number" step="0.10" min="0" value="' + (i.precoAntigo || '') + '" placeholder="opcional"></label></div>' +
@@ -403,9 +424,21 @@
       '<label class="campo"><span>Ingredientes que podem ser retirados (separe por vírgula)</span><input name="retirar" value="' + esc((i.retirar || []).join(', ')) + '"></label>' +
       '<div class="chave-l"><span><b>Disponível</b><small>Desligue quando acabar</small></span><label class="chave"><input type="checkbox" name="disponivel"' + (i.disponivel ? ' checked' : '') + '><span></span></label></div>' +
       '<div class="chave-l"><span><b>Destaque</b><small>Aparece no topo do cardápio</small></span><label class="chave"><input type="checkbox" name="destaque"' + (i.destaque ? ' checked' : '') + '><span></span></label></div>' +
-      '<div class="campo"><span>Foto</span><div class="fotos-esc">' + FOTOS.map(function (f) { var src = 'img/' + f + '.webp'; return '<label><input type="radio" name="foto" value="' + src + '"' + (src === i.foto ? ' checked' : '') + '><img src="' + src + '" alt="' + f + '" loading="lazy" width="90" height="90"></label>'; }).join('') + '</div></div>' +
       '<p class="erro-t" id="itemErro"></p></form>';
     abrir(id ? 'Editar item' : 'Novo item', corpo, (id ? '<button class="btn btn-perigo" type="button" id="exItem">Excluir</button>' : '') + '<button class="btn btn-amb" type="button" id="svItem">Salvar</button>');
+    $('#fotoArq').onchange = function (e) {
+      var arq = e.target.files && e.target.files[0]; if (!arq) return;
+      if (!/^image\//.test(arq.type)) { toast('Escolha um arquivo de imagem'); return; }
+      $('#itemErro').textContent = '';
+      fotoGaleria(arq).then(function (url) {
+        var velha = $('#fotosEsc .propria'); if (velha) velha.remove();
+        var l = d.createElement('label'); l.className = 'propria';
+        l.innerHTML = '<input type="radio" name="foto" checked><img alt="Sua foto" width="90" height="90">';
+        $('input', l).value = url; $('img', l).src = url;
+        $('#fotosEsc').insertBefore(l, $('#fotosEsc').firstChild); toast('Foto adicionada');
+      }, function () { $('#itemErro').textContent = 'Não deu para abrir essa foto. Tente outra.'; });
+      e.target.value = '';
+    };
     $('#svItem').onclick = function () {
       var f = $('#fItem');
       var preco = parseFloat(f.preco.value);
@@ -504,10 +537,13 @@
     $$('.adm-sec').forEach(function (x) { x.hidden = x.getAttribute('data-sec') !== s; });
     var b = $('#admMenu .ativo'); if (b && b.scrollIntoView && w.innerWidth < 900) b.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
   }
-  $('#admMenu').addEventListener('click', function (e) { var b = e.target.closest('[data-sec]'); if (b) secaoAdm(b.getAttribute('data-sec')); });
+  $('#admMenu').addEventListener('click', function (e) {
+    if (e.target.closest('#admMais')) { var m = $('#admMenu'), on = !m.classList.contains('mais-on'); m.classList.toggle('mais-on', on); $('#admMais').setAttribute('aria-expanded', on); if (!on && ['aparencia', 'pedidos', 'conta', 'dados'].indexOf(secAdm) >= 0) secaoAdm('loja'); return; }
+    var b = e.target.closest('[data-sec]'); if (b) secaoAdm(b.getAttribute('data-sec'));
+  });
   function pintarStatusAdm() { var st = DB.statusLoja(loja); $('#admStatus').innerHTML = '<i class="' + (st.aberta ? 'on' : '') + '"></i><b>' + esc(st.texto) + '</b><small>' + (loja.modo === 'auto' ? 'automático' : 'definido manualmente') + '</small>'; }
   function pintarAjustes() {
-    preencher($('#fLoja'), ['nome', 'slogan', 'bairro', 'cidade', 'endereco', 'telefone', 'whatsapp', 'instagram', 'faixaPreco', 'siteUrl']);
+    preencher($('#fLoja'), ['telefone', 'whatsapp', 'instagram']);
     preencher($('#fHorario'), ['abre', 'fecha', 'modo']);
     var folgas = loja.folgas || [];
     $('#dias').innerHTML = DIAS.map(function (d, k) { return '<label><input type="checkbox" value="' + k + '"' + (folgas.indexOf(k) >= 0 ? ' checked' : '') + '><span>' + d + '</span></label>'; }).join('');
@@ -530,13 +566,11 @@
   // loja
   $('#fLoja').addEventListener('submit', function (e) {
     e.preventDefault(); var f = e.target, o = {};
-    ['nome', 'slogan', 'bairro', 'cidade', 'endereco', 'telefone', 'whatsapp', 'instagram', 'faixaPreco', 'siteUrl'].forEach(function (k) { o[k] = f[k].value.trim(); });
-    if (!o.nome) { toast('Informe o nome da loja'); f.nome.focus(); return; }
+    ['telefone', 'whatsapp', 'instagram'].forEach(function (k) { o[k] = f[k].value.trim(); });
+    if (!digitos(o.whatsapp)) { toast('Informe o WhatsApp da loja'); f.whatsapp.focus(); return; }
     o.whatsapp = digitos(o.whatsapp); if (o.whatsapp && o.whatsapp.length <= 11) o.whatsapp = '55' + o.whatsapp;
     o.instagram = o.instagram.replace(/^@/, '');
-    if (o.siteUrl && !/^https?:\/\//i.test(o.siteUrl)) o.siteUrl = 'https://' + o.siteUrl;
-    if (o.siteUrl) { try { new URL(o.siteUrl); } catch (er) { toast('Endereço do site inválido'); f.siteUrl.focus(); return; } }
-    DB.salvarLoja(o).then(function (l) { loja = l; f.whatsapp.value = l.whatsapp; f.instagram.value = l.instagram; f.siteUrl.value = l.siteUrl || ''; linksSite(); salvo(f); });
+    DB.salvarLoja(o).then(function (l) { loja = l; f.whatsapp.value = l.whatsapp; f.instagram.value = l.instagram; salvo(f); });
   });
   // horários
   $('#fHorario').addEventListener('submit', function (e) {

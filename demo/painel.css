@@ -426,3 +426,15 @@ body { font-size: 15px; line-height: 1.45; min-height: 100vh; }
 .adm-sec .chave-l { padding: 12px 0; }
 .adm-sec .bairro-cab, .adm-sec .bairro-ed { grid-template-columns: 1fr 74px 104px 36px; }
 .campo .dica { display: block; margin-top: 6px; font-size: 12.5px; color: var(--mut); font-weight: 500; text-transform: none; letter-spacing: 0; }
+
+/* v15 · foto da galeria e opções extras escondidas */
+.galeria-b { display: inline-flex; align-items: center; gap: 8px; margin: 2px 0 8px; cursor: pointer; width: max-content; }
+.galeria-b .ico { width: 18px; height: 18px; }
+.fotos-esc { margin-top: 6px; }
+.fotos-esc .propria img { border-style: dashed; }
+.fotos-esc .propria input:checked + img { border-style: solid; }
+.adm-menu .adm-extra { display: none; }
+.adm-menu.mais-on .adm-extra { display: inline-flex; }
+#admMais { color: var(--mut); }
+.adm-menu.mais-on #admMais { color: var(--tx); }
+@media (min-width: 900px) { .adm-menu.mais-on .adm-extra { display: flex; } }
