@@ -322,3 +322,18 @@ html.intro .hero-flut img, html.intro .hero-t .ln-i, html.intro .hero .entra { a
   .hero-c { padding-top: 120px; padding-bottom: 8vh; }
   .hero-sub { font-size: 20px; }
 }
+
+/* ===== v14 · celular/tablet: burger menor, um pouco de lado, logo à direita, sem vão embaixo ===== */
+@media (max-width: 899px) {
+  .hero { min-height: 0; display: block; }
+  .hero-fundo { inset: 0; height: auto; }
+  .hero-flut { inset: auto; top: calc(30px + env(safe-area-inset-top, 0px)); left: -104vw; width: 228vw; height: auto; aspect-ratio: 1600 / 893; }
+  .hero-flut img { object-fit: cover; object-position: 50% 50%; transform: rotate(-7deg); transform-origin: 72% 45%; filter: saturate(.95) brightness(.8);
+    -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 12%, #000 62%, transparent 92%); mask-image: linear-gradient(180deg, transparent 0, #000 12%, #000 62%, transparent 92%); }
+  .hero-veu { background:
+    linear-gradient(90deg, rgba(15, 11, 9, .55) 0%, rgba(15, 11, 9, .2) 60%, rgba(15, 11, 9, 0) 100%),
+    linear-gradient(180deg, rgba(15, 11, 9, .5) 0, rgba(15, 11, 9, .15) 22vw, rgba(15, 11, 9, .35) 70vw, rgba(23, 18, 15, .85) 115vw, var(--bg) 140vw); }
+  .hero-c { padding-top: calc(64px + env(safe-area-inset-top, 0px) + 40vw); padding-bottom: 36px; }
+  .hero::after { height: 50px; }
+  #camadas { padding-top: 40px; }
+}
