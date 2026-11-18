@@ -309,10 +309,16 @@
       p.status = status; p.historico.push({ status: status, em: Date.now() });
       gravar(K.pedidos, lista); avisar(K.pedidos); return P(copia(p));
     },
+    informarPix: function (id) {
+      var lista = ler(K.pedidos, []), p = lista.filter(function (x) { return x.id === String(id); })[0];
+      if (!p) return Promise.reject(new Error('Pedido não encontrado'));
+      if (!p.pagamento.pixInformado) p.pagamento.pixInformado = Date.now();
+      gravar(K.pedidos, lista); avisar(K.pedidos); return P(copia(p));
+    },
     ouvirPedidos: function (cb) { return ouvir(K.pedidos, cb, 3000); },
     ouvirPedido: function (id, cb) {
       var ultimo = '';
-      function checar() { DB.pedido(id).then(function (p) { var s = JSON.stringify(p && [p.status, p.historico.length]); if (s !== ultimo) { ultimo = s; cb(p); } }); }
+      function checar() { DB.pedido(id).then(function (p) { var s = JSON.stringify(p && [p.status, p.historico.length, p.pagamento.pixInformado || 0]); if (s !== ultimo) { ultimo = s; cb(p); } }); }
       checar();
       return ouvir(K.pedidos, checar, 2500);
     },
@@ -369,7 +375,7 @@
     },
     pagamento: function (pg) {
       if (!pg) return '';
-      return { pix: 'Pix', cartao: 'Cartão na entrega', dinheiro: 'Dinheiro' + (pg.trocoPara ? ' · troco p/ ' + U.brl(pg.trocoPara) : ' · sem troco') }[pg.forma] || pg.forma;
+      return { pix: 'Pix' + (pg.pixInformado ? ' · cliente informou o pagamento' : ''), cartao: 'Cartão na entrega', dinheiro: 'Dinheiro' + (pg.trocoPara ? ' · troco p/ ' + U.brl(pg.trocoPara) : ' · sem troco') }[pg.forma] || pg.forma;
     },
     detalheItem: function (x) {
       var d = [];

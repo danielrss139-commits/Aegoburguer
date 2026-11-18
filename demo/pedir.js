@@ -373,6 +373,66 @@
     l.push('', 'Acompanhar: ' + location.href.split('#')[0] + '#pedido-' + p.id);
     return l.join('\n');
   }
+
+  /* ---------------- Pix copia e cola (BR Code estático) e comprovante ---------------- */
+  var impressos = {};
+  function semAcento(t) { return String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim().toUpperCase(); }
+  function emv(id, v) { v = String(v); return id + (v.length < 10 ? '0' : '') + v.length + v; }
+  function crc16(t) { var c = 0xFFFF; for (var i = 0; i < t.length; i++) { c ^= t.charCodeAt(i) << 8; for (var j = 0; j < 8; j++) c = c & 0x8000 ? (c << 1) ^ 0x1021 : c << 1; c &= 0xFFFF; } return ('000' + c.toString(16).toUpperCase()).slice(-4); }
+  function chaveFormatada() {
+    var k = String(loja.chavePix || digitos(loja.telefone)).trim(), tipo = loja.tipoChavePix || 'telefone';
+    if (tipo === 'telefone') { var n = digitos(k); if (n.length <= 11) n = '55' + n; return '+' + n; }
+    if (tipo === 'cpf' || tipo === 'cnpj') return digitos(k);
+    return k;
+  }
+  function pixCodigo(p) {
+    var cidade = semAcento(String(loja.cidade || '').split(' - ')[0]).slice(0, 15) || 'SALVADOR';
+    var corpo = emv('00', '01') + emv('26', emv('00', 'br.gov.bcb.pix') + emv('01', chaveFormatada())) + emv('52', '0000') + emv('53', '986') +
+      emv('54', (+p.total).toFixed(2)) + emv('58', 'BR') + emv('59', semAcento(loja.titularPix || loja.nome).slice(0, 25) || 'LOJA') + emv('60', cidade) +
+      emv('62', emv('05', ('PED' + p.numero).replace(/[^A-Za-z0-9]/g, '').slice(0, 25))) + '6304';
+    return corpo + crc16(corpo);
+  }
+  function qrSvg(t) { try { var q = qrcode(0, 'M'); q.addData(t); q.make(); return q.createSvgTag({ cellSize: 4, margin: 2, scalable: true }); } catch (e) { return ''; } }
+  function desenharRecibo(p) {
+    var W = 720, pad = 48, linhas = [], cv = d.createElement('canvas'), x = cv.getContext('2d');
+    var dt = new Date(p.criadoEm), inf = new Date(p.pagamento.pixInformado || Date.now());
+    function dataH(t) { return t.toLocaleDateString('pt-BR') + ' às ' + U.hora(t.getTime()); }
+    linhas.push(['t', loja.nome], ['c', 'Comprovante do pedido'], ['sep'], ['kv', 'Pedido', '#' + p.numero], ['kv', 'Data', dataH(dt)], ['kv', 'Cliente', p.cliente.nome], ['sep']);
+    p.itens.forEach(function (it) { linhas.push(['kv', it.qtd + '× ' + it.nome, brl(it.total)]); });
+    linhas.push(['sep'], ['kv', 'Subtotal', brl(p.subtotal)]);
+    if (p.tipo === 'entrega') linhas.push(['kv', 'Entrega', p.taxa ? brl(p.taxa) : 'Grátis']);
+    linhas.push(['tot', 'TOTAL', brl(p.total)], ['sep'], ['kv', 'Pagamento', 'Pix'], ['kv', 'Pix informado em', dataH(inf)], ['kv', 'Recebedor', loja.titularPix || loja.nome], ['sep'], ['c', 'A loja confirma o recebimento no extrato.'], ['c', 'Obrigado pela preferência!']);
+    var alt = { t: 70, c: 40, sep: 34, kv: 44, tot: 64 }, H = pad * 2 + 30 + linhas.reduce(function (s, l) { return s + alt[l[0]]; }, 0);
+    cv.width = W; cv.height = H;
+    x.fillStyle = '#fbf8f2'; x.fillRect(0, 0, W, H);
+    x.fillStyle = '#17120f'; for (var i = 0; i < W; i += 24) { x.beginPath(); x.moveTo(i, H); x.lineTo(i + 12, H - 12); x.lineTo(i + 24, H); x.fill(); }
+    var y = pad, cor = getComputedStyle(d.documentElement).getPropertyValue('--amb').trim() || '#e0a43a';
+    linhas.forEach(function (l) {
+      var a = alt[l[0]];
+      if (l[0] === 't') { x.fillStyle = '#17120f'; x.font = '800 40px system-ui, sans-serif'; x.textAlign = 'center'; x.fillText(l[1], W / 2, y + 44); }
+      else if (l[0] === 'c') { x.fillStyle = '#6b5f53'; x.font = '500 22px system-ui, sans-serif'; x.textAlign = 'center'; x.fillText(l[1], W / 2, y + 28); }
+      else if (l[0] === 'sep') { x.strokeStyle = '#cbbfb0'; x.setLineDash([8, 8]); x.lineWidth = 2; x.beginPath(); x.moveTo(pad, y + 17); x.lineTo(W - pad, y + 17); x.stroke(); x.setLineDash([]); }
+      else { var tot = l[0] === 'tot'; x.font = (tot ? '800 34px ' : '500 24px ') + 'ui-monospace, Menlo, monospace'; x.fillStyle = tot ? '#17120f' : '#3a3029';
+        x.textAlign = 'left'; var esq = l[1]; while (x.measureText(esq).width > W - pad * 2 - 220 && esq.length > 4) esq = esq.slice(0, -2) + '…'; x.fillText(esq, pad, y + (tot ? 44 : 30));
+        x.textAlign = 'right'; if (tot) x.fillStyle = cor; x.fillText(l[2], W - pad, y + (tot ? 44 : 30)); }
+      y += a;
+    });
+    return cv;
+  }
+  function abrirRecibo(id) {
+    DB.pedido(id).then(function (p) {
+      if (!p) return; var cv = desenharRecibo(p), url = cv.toDataURL('image/png'), nome = 'comprovante-pedido-' + p.numero + '.png';
+      abrir(cab('Comprovante') + '<div class="folha-corpo"><img class="recibo-img" src="' + url + '" alt="Comprovante do pedido #' + esc(p.numero) + '">' +
+        '<div class="ac-acoes"><button class="btn-prim centro" type="button" id="rcComp">Compartilhar</button><a class="btn-sec" id="rcBaixar" href="' + url + '" download="' + nome + '">Baixar imagem</a></div></div>');
+      $('#rcComp').onclick = function () {
+        cv.toBlob(function (b) {
+          var f = new File([b], nome, { type: 'image/png' });
+          if (navigator.canShare && navigator.canShare({ files: [f] })) navigator.share({ files: [f], title: 'Comprovante pedido #' + p.numero, text: loja.nome + ' · pedido #' + p.numero + ' · ' + brl(p.total) }).catch(function () {});
+          else { $('#rcBaixar').click(); toast('Seu aparelho não compartilha direto. Baixei a imagem.'); }
+        }, 'image/png');
+      };
+    });
+  }
   function abrirAcomp(id, novo) {
     if (pararAcomp) { pararAcomp(); pararAcomp = null; }
     abrir(cab('Acompanhar pedido') + '<div class="folha-corpo"><div class="acomp" id="acomp"><p class="vazio">Carregando…</p></div></div>', {
@@ -407,7 +467,22 @@
     h += '<div class="caixa"><h4>Itens</h4>' + p.itens.map(function (x) { return '<div class="li"><span>' + x.qtd + '× ' + esc(x.nome) + (U.detalheItem(x) ? '<small>' + esc(U.detalheItem(x)) + '</small>' : '') + '</span><span>' + brl(x.total) + '</span></div>'; }).join('') +
       '<div class="li" style="border-top:1px dashed rgba(244,237,226,.2);margin-top:6px;padding-top:9px"><span>Taxa de entrega</span><span>' + (p.taxa ? brl(p.taxa) : 'Grátis') + '</span></div>' +
       '<div class="li"><b>Total</b><b>' + brl(p.total) + '</b></div><div class="li"><span>Pagamento</span><span>' + esc(U.pagamento(p.pagamento)) + '</span></div></div>';
-    if (p.pagamento.forma === 'pix' && idx < 3 && !canc) { var chv = loja.chavePix || digitos(loja.telefone); h += '<div class="caixa"><h4>Pix</h4><div class="li"><span>Chave (' + esc(loja.tipoChavePix || 'telefone') + ')<small>' + esc(chv) + ' · ' + esc(loja.titularPix || loja.nome) + '</small></span><button class="btn-sec" type="button" data-copiar="' + esc(chv) + '" style="height:38px">Copiar</button></div></div>'; }
+    if (p.pagamento.forma === 'pix' && !canc) {
+      var chv = loja.chavePix || digitos(loja.telefone), inf = p.pagamento.pixInformado;
+      if (!inf && idx < 3) {
+        var cod = pixCodigo(p);
+        h += '<div class="caixa pix-cx"><h4>Pague com Pix</h4><p class="pix-val">' + brl(p.total) + '</p>' +
+          '<div class="pix-qr">' + qrSvg(cod) + '</div><p class="pix-dica">Abra o app do seu banco, escolha Pix e leia o QR Code, ou use o copia e cola.</p>' +
+          '<button class="btn-sec pix-copia" type="button" data-copiar="' + esc(cod) + '" data-rot="Código Pix copiado">' + IC.pix + 'Copiar Pix copia e cola</button>' +
+          '<div class="li"><span>Chave (' + esc(loja.tipoChavePix || 'telefone') + ')<small>' + esc(chv) + ' · ' + esc(loja.titularPix || loja.nome) + '</small></span><button class="btn-sec" type="button" data-copiar="' + esc(chv) + '" style="height:38px">Copiar</button></div>' +
+          '<button class="btn-prim centro pix-pago" type="button" data-pixpago="' + esc(p.id) + '">Já fiz o Pix</button></div>';
+      } else if (inf) {
+        var anima = !impressos[p.id]; impressos[p.id] = 1;
+        h += '<div class="caixa imp-cx"><h4>Comprovante</h4><div class="impressora' + (anima ? ' anima' : '') + '"><div class="imp-topo"><i></i></div><div class="imp-saida">' +
+          '<button type="button" class="papel" data-recibo="' + esc(p.id) + '" aria-label="Abrir comprovante"><b>' + esc(loja.nome) + '</b><span>Pedido #' + esc(p.numero) + '</span><span class="tr"></span><span>Total ' + brl(p.total) + '</span><em>PIX INFORMADO ✓</em><small>Toque para abrir</small></button>' +
+          '</div></div></div>';
+      }
+    }
     h += '<div class="ac-acoes"><a class="btn-sec btn-zap" target="_blank" rel="noopener" href="https://wa.me/' + esc(loja.whatsapp) + '?text=' + encodeURIComponent(textoZap(p)) + '">' + IC.zap + 'Enviar resumo pelo WhatsApp</a>' +
       '<button class="btn-sec" type="button" data-acao="fechar">Voltar ao cardápio</button></div>';
     el.innerHTML = h;
@@ -468,12 +543,14 @@
 
   /* ---------------- eventos ---------------- */
   d.addEventListener('click', function (e) {
-    var t = e.target.closest('[data-item],[data-acao],[data-ped],[data-ircat],[data-copiar]');
+    var t = e.target.closest('[data-item],[data-acao],[data-ped],[data-ircat],[data-copiar],[data-pixpago],[data-recibo]');
     if (!t) return;
     if (t.hasAttribute('data-item')) abrirItem(t.getAttribute('data-item'));
     else if (t.hasAttribute('data-ped')) abrirAcomp(t.getAttribute('data-ped'));
     else if (t.hasAttribute('data-ircat')) { var id = t.getAttribute('data-ircat'); fechar(); vista('inicio'); setTimeout(function () { var s = $('#cat-' + id); if (s) s.scrollIntoView({ behavior: 'smooth' }); }, 60); }
-    else if (t.hasAttribute('data-copiar')) { var v = t.getAttribute('data-copiar'); (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject()).then(function () { toast('Chave Pix copiada'); }, function () { toast('Chave: ' + v); }); }
+    else if (t.hasAttribute('data-copiar')) { var v = t.getAttribute('data-copiar'), rot = t.getAttribute('data-rot') || 'Chave Pix copiada'; (navigator.clipboard ? navigator.clipboard.writeText(v) : Promise.reject()).then(function () { toast(rot); }, function () { toast('Copie: ' + v); }); }
+    else if (t.hasAttribute('data-pixpago')) { t.disabled = true; DB.informarPix(t.getAttribute('data-pixpago')).then(function () { toast('Pagamento informado à loja'); }); }
+    else if (t.hasAttribute('data-recibo')) abrirRecibo(t.getAttribute('data-recibo'));
     else {
       var a = t.getAttribute('data-acao');
       if (a === 'fechar') fechar(); else if (a === 'checkout') abrirCheckout(); else if (a === 'sacola') abrirSacola();

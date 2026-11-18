@@ -2,9 +2,9 @@
    Rede primeiro (sempre a versão mais nova); cache só como reserva offline.
    Guarda apenas arquivos do próprio site listados em SHELL e as fotos de img/.
    Ao publicar mudanças, aumente VERSAO para os celulares pegarem os arquivos novos. */
-var VERSAO = 'ab-v16';
+var VERSAO = 'ab-v17';
 var SHELL = ['./', 'index.html', 'pedir.html', 'painel.html', 'base.css', 'site.css', 'pedir.css', 'painel.css',
-  'db.js', 'site.js', 'pedir.js', 'painel.js', 'manifest-pedir.json', 'manifest-painel.json',
+  'db.js', 'qr.js', 'site.js', 'pedir.js', 'painel.js', 'manifest-pedir.json', 'manifest-painel.json',
   'fonts/anton.woff2', 'fonts/hanken-grotesk.woff2', 'img/hero-aego.webp', 'img/hero-aego-m.webp', 'img/capa-aego.webp',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/favicon-32.png', 'icons/apple-touch-icon.png'];
 var OK = {};

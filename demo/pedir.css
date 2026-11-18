@@ -316,3 +316,34 @@ html.oculto .ac-icone.vivo, html.oculto .etapa.atual .bol::after { animation-pla
 /* botão WhatsApp (logo oficial) */
 .btn-zap { display: inline-flex; align-items: center; justify-content: center; gap: 9px; background: #25d366; border-color: #25d366; color: #fff; font-weight: 800; text-decoration: none; }
 .btn-zap .zap-ic { width: 20px; height: 20px; fill: currentColor; stroke: none; flex: none; }
+
+/* v16 · Pix com QR Code e comprovante saindo da impressora */
+.pix-cx { text-align: center; }
+.pix-val { margin: 0 0 10px; font-size: 26px; font-weight: 800; color: var(--amb-tx); }
+.pix-qr { width: 196px; height: 196px; margin: 0 auto; padding: 8px; border-radius: 12px; background: #fff; }
+.pix-qr svg { display: block; width: 100%; height: 100%; }
+.pix-dica { margin: 12px auto 12px; max-width: 300px; font-size: 13.5px; color: var(--mut); }
+.pix-copia { width: 100%; justify-content: center; margin-bottom: 8px; }
+.pix-copia svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.pix-cx .li { text-align: left; }
+.pix-pago { width: 100%; margin-top: 12px; }
+.imp-cx { padding-bottom: 6px; }
+.impressora { position: relative; width: 240px; margin: 6px auto 0; }
+.imp-topo { position: relative; z-index: 2; height: 46px; border-radius: 14px 14px 8px 8px; background: linear-gradient(180deg, #3a2f27, #241c16); box-shadow: 0 8px 18px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 255, 255, .08); }
+.imp-topo::before { content: ""; position: absolute; right: 16px; top: 12px; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+.imp-topo i { position: absolute; left: 18px; right: 18px; bottom: 9px; height: 6px; border-radius: 3px; background: #0d0907; }
+.imp-saida { position: relative; z-index: 1; margin: -12px 26px 0; overflow: hidden; padding-bottom: 14px; }
+.papel { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 100%; padding: 22px 12px 26px; border: 0; background: #fbf8f2; color: #2a211b; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; cursor: pointer; box-shadow: 0 6px 14px rgba(0, 0, 0, .35);
+  -webkit-mask: linear-gradient(#000 0 0) top / 100% calc(100% - 10px) no-repeat, conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / 16px 10px repeat-x;
+  mask: linear-gradient(#000 0 0) top / 100% calc(100% - 10px) no-repeat, conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / 16px 10px repeat-x; }
+.papel b { font-family: var(--display, inherit); font-size: 17px; letter-spacing: .02em; }
+.papel .tr { width: 100%; border-top: 1.5px dashed #c9bdae; margin: 4px 0; }
+.papel em { font-style: normal; font-weight: 800; color: #1f8a4c; }
+.papel small { margin-top: 4px; color: #8a7d70; font-family: inherit; }
+.impressora.anima .papel { animation: imprime 2.4s steps(14, end) .25s both; }
+.impressora.anima .imp-topo { animation: tremor .12s linear 14 .25s; }
+@keyframes imprime { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+@keyframes tremor { 50% { transform: translateX(.6px); } }
+@media (hover: hover) { .papel:hover { transform: translateY(2px); } }
+.recibo-img { display: block; width: 100%; max-width: 420px; margin: 0 auto 16px; border-radius: 6px; box-shadow: 0 12px 30px rgba(0, 0, 0, .5); }
+@media (prefers-reduced-motion: reduce) { .impressora.anima .papel, .impressora.anima .imp-topo { animation: none; } }
